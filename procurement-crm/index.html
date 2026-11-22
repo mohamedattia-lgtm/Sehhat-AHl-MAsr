@@ -361,8 +361,16 @@ function exportWorkbook(filename,sheets){
   const rows=sh.rows||[],ws=XLSX.utils.json_to_sheet(rows);
   if(rows.length){
    const headers=Object.keys(rows[0]);
-   ws['!cols']=headers.map(h=>({wch:Math.min(34,Math.max(14,String(h).length+3))}));
+   ws['!cols']=headers.map(h=>({wch:Math.min(38,Math.max(14,String(h).length+3))}));
    ws['!autofilter']={ref:ws['!ref']};
+   headers.forEach((h,col)=>{
+    if(/discount|خصم|share|cumulative|النسبة|التراكمي/i.test(h)){
+     for(let r=2;r<=rows.length+1;r++){
+      const addr=XLSX.utils.encode_cell({r:r-1,c:col}),cell=ws[addr];
+      if(cell && typeof cell.v==='number')cell.z='0.0%';
+     }
+    }
+   });
   }
   XLSX.utils.book_append_sheet(wb,ws,(sh.name||'Data').slice(0,31));
  }
@@ -580,16 +588,19 @@ function awardExportReport(){
  data.items.forEach(x=>{
   const top=x.offers.filter(o=>o.unitPrice>0).slice(0,3);
   const recommended=top[0]||null;
+  const hasHistory=!!(x.history?.bestVendor && num(x.history?.bestDiscount)>0);
   const allocated=top.reduce((a,o)=>a+num(state.award.allocations[awardAllocKey(x.code,o.vendor)]??0),0);
   const row={
    'Item Code':x.code,'Item Name':x.item,'Requested Qty':x.qty,
    'PR Unit Cost':x.unitCost,'PR Total Value':x.value,'Pareto Group':x.pareto,
    'Historical Best Supplier':x.history?.bestVendor||'',
    'Historical Reference Discount':x.history?.bestDiscount??'',
-   'SYSTEM RECOMMENDATION':recommended?.vendor||'No current priced offer',
+   'SYSTEM RECOMMENDATION':recommended?.vendor||(hasHistory?x.history.bestVendor:'No recommendation available'),
+   'Recommendation Type':recommended?'Current offer':(hasHistory?'Historical reference only':'No current offer or historical reference'),
    'Recommendation Current Discount':recommended?.discount??'',
+   'Recommendation Historical Discount':!recommended&&hasHistory?x.history.bestDiscount:'',
    'Recommendation Unit Price':recommended?.unitPrice??'',
-   'Recommendation Basis':recommended?'Highest current comparable discount; lower unit price breaks ties':'No valid priced current offer',
+   'Recommendation Basis':recommended?'Best current offer based on comparable discount; lower unit price breaks ties':(hasHistory?'No new priced offer; historical supplier and discount shown for reference only':'No valid current priced offer or historical reference'),
    'Total Awarded Qty':allocated,'Remaining Qty':Math.max(0,x.qty-allocated)
   };
   for(let i=0;i<3;i++){
