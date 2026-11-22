@@ -2,7 +2,7 @@
 <html lang="ar" dir="rtl">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Procurement CRM v7 | Sehhat Ahl Masr</title>
+<title>Procurement CRM v9 | Sehhat Ahl Masr</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
@@ -12,6 +12,18 @@
 @media(max-width:1000px){.cards{grid-template-columns:repeat(2,1fr)}.layout{grid-template-columns:1fr}}@media(max-width:700px){.shell{grid-template-columns:1fr}.side{padding:14px}.nav{grid-template-columns:repeat(3,1fr);margin-top:12px}.nav button{font-size:11px;text-align:center;padding:9px 5px}.sidefoot{display:none}.main{padding:18px 13px}.top{align-items:flex-start;flex-direction:column}.uploadgrid{grid-template-columns:1fr}.cards{gap:8px}.card{padding:13px}.card .value{font-size:21px}}
 
 .authgate{position:fixed;inset:0;background:rgba(12,25,44,.92);display:grid;place-items:center;z-index:100;padding:20px}.authcard{width:min(420px,100%);background:#fff;border-radius:18px;padding:28px;box-shadow:0 20px 70px #0005}.authcard h2{margin:0 0 8px}.authcard p{color:#728096;font-size:13px;line-height:1.7}.authcard label{display:block;font-size:12px;margin:14px 0 6px}.authcard input{width:100%;padding:12px;border:1px solid #dce3ed;border-radius:9px}.autherror{color:#b42332;font-size:12px;min-height:20px;margin-top:10px}.cloudstatus{font-size:11px;color:#15966a;margin-top:4px}
+
+.award-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin:14px 0}
+.award-kpi{background:#fff;border:1px solid var(--line);border-radius:13px;padding:15px}
+.award-kpi small{display:block;color:var(--muted);font-size:11px}.award-kpi b{display:block;font-size:23px;margin-top:8px}
+#awarding .toolbar label{display:flex;align-items:center;gap:6px;font-size:12px;flex-wrap:wrap}
+#awarding input[type=file]{max-width:210px;font-size:11px}
+#awarding .tablewrap{overflow:auto}#awarding table{min-width:1250px}
+.award-a{background:#e7f7ef;color:#087443;padding:4px 8px;border-radius:20px;font-size:11px}
+.award-b{background:#fff4dd;color:#9b6500;padding:4px 8px;border-radius:20px;font-size:11px}
+.award-c{background:#eef2f7;color:#536276;padding:4px 8px;border-radius:20px;font-size:11px}
+.award-qty{width:90px;min-width:80px;padding:6px;border:1px solid #cbd5e1;border-radius:7px}
+@media(max-width:900px){.award-grid{grid-template-columns:repeat(2,1fr)}}
 </style>
 </head>
 <body>
@@ -23,12 +35,12 @@
 <div class="autherror" id="authError" role="status" aria-live="polite"></div><p id="authHelp" style="font-size:11px">استخدم كلمة مرور حساب النظام، وليس كلمة مرور Gmail أو App Password.</p></div></div>
 <div class="shell" id="appShell" style="display:none">
 <aside class="side">
-  <div class="brand">Procurement CRM<small>SEHHAT AHL MASR · V7.0</small></div>
+  <div class="brand">Procurement CRM<small>SEHHAT AHL MASR · V9.0</small></div>
   <div class="nav">
     <button class="active" data-page="dashboard">▦ لوحة التحكم</button>
     <button data-page="imports">⇧ استيراد الملفات</button>
     <button data-page="pr">▤ طلب الشراء PR</button>
-    <button data-page="purchaseOrders">▣ أوامر الشراء PO</button>
+    <button data-page="purchaseOrders">▣ أوامر الشراء PO</button>\n    <button data-page="awarding">🏆 ترسية المشتريات</button>
     <button data-page="comparison">⇄ مقارنة التوريد</button>
     <button data-page="suppliers">♙ الموردون</button>
     <button data-page="receipts">📦 الاستلامات الفعلية</button>
@@ -53,16 +65,12 @@
       <div class="card"><div class="label">قيمة أوامر التوريد</div><div class="value" id="poValue">—</div><div class="hint">EGP · إجمالي قيمة الطلبات</div></div>
       <div class="card"><div class="label">استلامات خارج أصناف PR</div><div class="value" id="unmatchedReceiptValue">—</div><div class="hint">EGP · لا تدخل في نسبة تحقيق PR</div></div>
       <div class="card"><div class="label">نسبة تغطية PR بالكميات</div><div class="value" id="prRate">—</div><div class="hint">كمية الاستلامات المطابقة ÷ كمية PR</div></div>
-      <div class="card"><div class="label">أصناف تم توريدها بالكامل</div><div class="value" id="prItemsFull">—</div><div class="hint">عدد الأصناف · <span id="prItemsFullRate">—</span> من إجمالي أصناف PR</div></div>
-      <div class="card"><div class="label">أصناف تم توريدها جزئيًا</div><div class="value" id="prItemsPartial">—</div><div class="hint">عدد الأصناف · <span id="prItemsPartialRate">—</span> من إجمالي أصناف PR</div></div>
-      <div class="card"><div class="label">أصناف لم يتم توريدها</div><div class="value" id="prItemsZero">—</div><div class="hint">عدد الأصناف · <span id="prItemsZeroRate">—</span> من إجمالي أصناف PR</div></div>
       
     </div>
     <div class="layout">
       <div class="panel"><div class="panelhead"><h3>قيمة طلب الشراء PR مقابل المحقق بالاستلامات</h3><span class="pill">شهري · EGP</span></div><div class="chartbox"><canvas id="valueChart"></canvas></div></div>
       <div class="panel"><div class="panelhead"><h3>حالة التوريد</h3><span class="pill">حسب الكمية</span></div><div class="chartbox"><canvas id="statusChart"></canvas></div></div>
     </div>
-    <div class="panel" style="margin-bottom:15px"><div class="panelhead"><h3>تحليل الاستلامات حسب المخزن / مجموعة الاستلام</h3><div><span class="pill">Warehouse · شهري</span> <button class="btn soft" id="exportWarehouseDashboard">تصدير تحليل الجهات Excel</button></div></div><div class="note">يعرض هذا الجدول توزيع الاستلامات الفعلية حسب قيمة وكمية كل جهة، وحصة كل مجموعة من إجمالي الاستلامات. عدد أصناف PR المغطاة يعني الأصناف التي ظهر لها استلام في المجموعة، وليس تحقيق احتياج مستقل لها؛ لأن ملف PR الحالي لا يحدد كمية مطلوبة لكل جهة.</div><div class="tablewrap"><table><thead><tr><th>المجموعة</th><th>عدد حركات الاستلام</th><th>كمية الاستلام</th><th>حصة الكمية</th><th>قيمة الاستلام</th><th>حصة القيمة</th><th>عدد الأصناف المستلمة</th><th>أصناف PR المغطاة</th><th>من إجمالي أصناف PR</th></tr></thead><tbody id="warehouseDashboardRows"><tr><td colspan="9" class="empty">ارفع ملف الاستلامات لعرض التحليل.</td></tr></tbody></table></div></div>
     <div class="panel"><div class="panelhead"><h3>أداء الموردين</h3><span class="pill">تحقيق قيمة تخصيص PR</span></div><div class="tablewrap"><table><thead><tr><th>المورد</th><th>أصناف مخصصة</th><th>قيمة PR للمورد</th><th>المحقق بالاستلام</th><th>تحقيق قيمة PR</th><th>حصة من إجمالي المحقق</th><th>مساهمة من إجمالي PR</th><th>الحالة</th></tr></thead><tbody id="supplierRows"><tr><td colspan="6" class="empty">ارفع ملفي أوامر الشراء والاستلامات لعرض النتائج.</td></tr></tbody></table></div></div>
   </section>
 
@@ -80,7 +88,6 @@
 
   <section class="page" id="pr">
     <div class="panel"><div class="panelhead"><h3>طلب الشراء PR — Purchase Requisition</h3><div><span class="pill">احتياج المخزن الداخلي</span> <button class="btn soft" id="exportPR">تصدير PR Excel</button></div></div>
-      <div class="filters" style="margin:12px 0"><input id="prSearch" placeholder="بحث بكود الصنف أو اسم الصنف" style="min-width:280px"></div>
       <div class="note">الشيت الرئيسي (Sheet1) يمثل إجمالي طلب المخزن حسب كود الصنف. الشيتات المسماة بأسماء الموردين (HORUS وMEDTECH وELTAWHED في الملف المرفق) تمثل الكميات المخصصة لكل مورد، وسيتم استخدامها لتقييم المورد. التقييم لا يشمل المورد الذي لا يوجد له شيت تخصيص PR إلا إذا أضيف له توزيع واضح. لا يتم جمع الشيت الرئيسي مع شيتات الموردين حتى لا يتكرر احتساب نفس الطلب.</div>
       <div class="cards"><div class="card"><div class="label">عدد أصناف PR</div><div class="value" id="prItems">—</div></div><div class="card"><div class="label">إجمالي كمية PR</div><div class="value" id="prQty">—</div></div><div class="card"><div class="label">قيمة PR المحسوبة</div><div class="value" id="prTotal">—</div></div><div class="card"><div class="label">شيتات الموردين</div><div class="value" id="prVendors">—</div></div></div>
       <div class="tablewrap"><table><thead><tr><th>المورد المخصص</th><th>كود الصنف</th><th>الصنف</th><th>وحدة القياس</th><th>كمية PR</th><th>المستلم الفعلي</th><th>نسبة التغطية</th></tr></thead><tbody id="prRows"><tr><td colspan="7" class="empty">ارفع ملف PR لعرض المقارنة.</td></tr></tbody></table></div>
@@ -91,14 +98,53 @@
   <section class="page" id="purchaseOrders">
     <div class="panel"><div class="panelhead"><h3>أوامر الشراء / التوريد PO — Purchase Order</h3><button class="btn primary" id="exportPO">تصدير أوامر الشراء Excel</button></div>
       <div class="note">أمر الشراء PO هو المستند الذي تصدره إدارة المشتريات للمورد لتحديد الأصناف والكميات والأسعار المطلوب توريدها. وهو مختلف عن PR الذي يمثل احتياج المخزن الداخلي، ولا يثبت الاستلام الفعلي.</div>
-      <div class="filters" style="margin:12px 0"><input id="poSearch" placeholder="بحث بالمورد أو كود الصنف أو اسم الصنف" style="min-width:320px"></div>
       <div class="cards"><div class="card"><div class="label">عدد بنود أوامر الشراء</div><div class="value" id="poLines">—</div></div><div class="card"><div class="label">عدد الموردين</div><div class="value" id="poSuppliers">—</div></div><div class="card"><div class="label">إجمالي قيمة PO</div><div class="value" id="poTotalValue">—</div></div><div class="card"><div class="label">إجمالي الكميات</div><div class="value" id="poTotalQty">—</div></div></div>
       <div class="tablewrap"><table><thead><tr><th>التاريخ</th><th>المورد</th><th>كود الصنف</th><th>الصنف</th><th>كمية PO</th><th>كمية الاستلام</th><th>المتبقي</th><th>سعر PO</th><th>سعر الاستلام</th><th>ضريبة PO</th><th>ضريبة الاستلام</th><th>قيمة PO</th><th>قيمة الاستلام</th></tr></thead><tbody id="poRows"><tr><td colspan="13" class="empty">ارفع ملف أوامر الشراء لعرض البيانات.</td></tr></tbody></table></div>
       <div class="panel" style="margin-top:15px"><div class="panelhead"><h3>الأصناف المتبقية لإعادة الطلب</h3><button class="btn soft" id="exportReorder">تصدير الأصناف المتبقية Excel</button></div><div class="tablewrap"><table><thead><tr><th>المورد</th><th>كود الصنف</th><th>الصنف</th><th>كمية PO</th><th>المستلم</th><th>المتبقي المقترح لإعادة طلبه</th><th>سعر PO</th></tr></thead><tbody id="reorderRows"><tr><td colspan="7" class="empty">لا توجد بيانات بعد.</td></tr></tbody></table></div><div class="note">الكمية المقترحة هنا هي المتبقي من أمر الشراء بعد خصم الاستلامات المطابقة للمورد والصنف والشهر. راجع احتياج المخزن والمخزون الحالي قبل إصدار أمر جديد.</div></div>
     </div>
   </section>
 
-  <section class="page" id="comparison">
+  
+<section class="page" id="awarding">
+ <div class="panel">
+  <div class="panelhead"><h3>ترسية المشتريات — Procurement Awarding</h3><span class="pill">Item-level · Split Allocation</span></div>
+  <div class="note">الطلبية الشهرية تحدد الكميات والتكلفة المرجعية. عروض الموردين الحالية تحدد المنافسة. المرجعية التاريخية تستخدم للمقارنة فقط ولا تعتبر عرضًا جديدًا أو خصمًا محققًا. ترتيب الموردين المقترح حسب أقل سعر وحدة معروض، والقرار النهائي لك.</div>
+  <div class="toolbar" style="margin:12px 0;gap:10px;flex-wrap:wrap">
+   <label>الشهر <input id="awardMonthInput" type="month" value="2026-10"></label>
+   <label>ملف الطلبية <input type="file" id="awardPRFile" accept=".xlsx,.xls"></label>
+   <label>ملف عروض الشهر <input type="file" id="awardOffersFile" accept=".xlsx,.xls"></label>
+   <label>المرجعية التاريخية <input type="file" id="awardHistoryFile" accept=".xlsx,.xls"></label>
+   <button class="btn soft" id="awardUseSystemPR">استخدام PR المحمل بالنظام</button>
+   <button class="btn soft" id="awardRecalc">إعادة التحليل</button>
+   <button class="btn primary" id="awardExportReport">تصدير تقرير الترسية</button>
+   <button class="btn primary" id="awardExportPO">تصدير أوامر الموردين</button>
+  </div>
+  <div id="awardStatus" class="muted" style="font-size:12px;margin-bottom:12px">ارفع الملفات الثلاثة أو استخدم PR المحمل بالنظام.</div>
+  <div class="award-grid">
+   <div class="award-kpi"><small>أصناف الطلبية</small><b id="awKpiPR">—</b></div>
+   <div class="award-kpi"><small>أصناف لها عروض حالية</small><b id="awKpiOffers">—</b></div>
+   <div class="award-kpi"><small>أصناف مجموعة 80/20</small><b id="awKpiPareto">—</b></div>
+   <div class="award-kpi"><small>قيمة الطلبية ذات العروض</small><b id="awKpiValue">—</b></div>
+  </div>
+ </div>
+ <div class="panel" style="margin-top:14px">
+  <div class="panelhead"><h3>تحليل 80/20 للأصناف التي لها عروض</h3><span class="pill">Pareto داخل مجموعة العروض فقط</span></div>
+  <div id="awardParetoSummary" class="note">سيظهر التحليل بعد تحميل البيانات.</div>
+  <div class="tablewrap"><table><thead><tr><th>كود الصنف</th><th>الصنف</th><th>قيمة الطلبية</th><th>النسبة من مجموعة العروض</th><th>التراكمي</th><th>الأهمية</th></tr></thead><tbody id="awardParetoRows"><tr><td colspan="6" class="empty">لا توجد بيانات بعد.</td></tr></tbody></table></div>
+ </div>
+ <div class="panel" style="margin-top:14px">
+  <div class="panelhead"><h3>مقارنة العروض وترتيب الموردين</h3><span class="pill">أفضل 3 توصيات لكل صنف</span></div>
+  <div class="toolbar" style="margin:10px 0"><input id="awardSearch" placeholder="بحث بكود الصنف أو الاسم أو المورد"><select id="awardFilter"><option value="all">كل الأصناف</option><option value="pareto">أصناف 80/20 فقط</option><option value="nooffer">بدون عرض حالي</option><option value="offer">لها عرض حالي</option></select></div>
+  <div class="tablewrap"><table><thead><tr><th>الأهمية</th><th>كود الصنف</th><th>الصنف</th><th>الكمية</th><th>تكلفة PR</th><th>المورد</th><th>ترتيب العرض</th><th>خصم حالي</th><th>سعر الوحدة المعروض</th><th>الخصم المرجعي</th><th>الفرق عن المرجع</th><th>الكمية المرسّاة</th><th>قيمة الترسية</th></tr></thead><tbody id="awardRows"><tr><td colspan="13" class="empty">ارفع ملفات الترسية لبدء المقارنة.</td></tr></tbody></table></div>
+  <div class="note">تظهر العروض الحالية فقط كعروض قابلة للترسية. الخصم التاريخي يظهر للمقارنة ولا يدخل في قيمة الترسية أو الوفر. لا يتم افتراض توفر كمية لدى المورد؛ أدخل الكمية المرسّاة يدويًا. سعر الوحدة هو السعر الوارد بملف العرض، وحقل VAT يُعرض كمرجع فقط عند وجوده ولا تتم إضافة ضريبة غير مثبتة. فرق السعر عن تكلفة PR استرشادي لحين توحيد أساس الضريبة.</div>
+ </div>
+ <div class="panel" style="margin-top:14px">
+  <div class="panelhead"><h3>ملخص الترسية حسب المورد</h3><span class="pill">Supplier PO Summary</span></div>
+  <div class="tablewrap"><table><thead><tr><th>المورد</th><th>عدد الأصناف</th><th>إجمالي الكميات</th><th>قيمة الترسية</th><th>فرق السعر الاسترشادي قبل تسوية الضريبة</th></tr></thead><tbody id="awardSupplierSummary"><tr><td colspan="5" class="empty">لا توجد ترسية بعد.</td></tr></tbody></table></div>
+  <div class="toolbar" style="margin-top:12px"><button class="btn primary" id="awardSave">حفظ توزيع الترسية</button><span class="muted">الحفظ لا يصدر PO تلقائيًا؛ تصدير أوامر الموردين يتم من الزر أعلى الصفحة.</span></div>
+ </div>
+</section>
+<section class="page" id="comparison">
     <div class="panel">
       <div class="panelhead"><h3>مقارنة أمر الشراء PO بالاستلام الفعلي</h3><div><span class="pill">المورد + كود الصنف + الشهر</span> <button class="btn soft" id="exportComparison">تصدير المقارنة Excel</button></div></div>
       <div class="filters" style="margin-bottom:14px"><input id="searchItem" placeholder="بحث بالمورد أو كود الصنف أو الاسم"><select id="matchFilter"><option value="all">كل الحالات</option><option value="full">مكتمل</option><option value="partial">جزئي</option><option value="zero">بدون توريد</option><option value="over">زيادة توريد</option><option value="unmatched">استلام بدون طلب</option></select></div>
@@ -116,8 +162,7 @@
     <div class="panel"><div class="panelhead"><h3>الاستلامات الفعلية — Goods Receipt</h3><button class="btn primary" id="exportReceipts">تصدير الاستلامات Excel</button></div>
       <div class="note">الاستلام الفعلي هو ما تم تسجيله واستلامه بالفعل بالمخزن. لا يعني وجود PR أو PO أن الكمية تم توريدها؛ إثبات التوريد يكون من حركة الاستلام.</div>
       <div class="cards"><div class="card"><div class="label">عدد سطور الاستلام</div><div class="value" id="receiptLines">—</div></div><div class="card"><div class="label">عدد الموردين</div><div class="value" id="receiptSuppliers">—</div></div><div class="card"><div class="label">قيمة الاستلامات</div><div class="value" id="receiptTotalValue">—</div></div><div class="card"><div class="label">إجمالي الكميات المستلمة</div><div class="value" id="receiptTotalQty">—</div></div></div>
-      <div class="panel" style="margin:14px 0"><div class="panelhead"><h3>تحليل الاستلامات حسب الجهة / المجموعة</h3><button class="btn soft" id="exportWarehouse">تصدير تحليل المجموعات Excel</button></div><div class="note">نسبة الاستلامات هنا تعني حصة المجموعة من إجمالي الكميات أو القيم المستلمة خلال الشهر. تغطية الأصناف تقيس عدد أصناف PR التي ظهر لها استلام في المجموعة. لا تُعرض كنسبة تحقيق احتياج المجموعة؛ لأن ملف PR الحالي لا يوزع الكميات المطلوبة على الجهات.</div><div class="tablewrap"><table><thead><tr><th>المجموعة</th><th>عدد حركات الاستلام</th><th>كمية الاستلام</th><th>حصة الكمية من الإجمالي</th><th>قيمة الاستلام</th><th>حصة القيمة من الإجمالي</th><th>أصناف مستلمة</th><th>أصناف PR المغطاة</th><th>تغطية أصناف PR</th></tr></thead><tbody id="warehouseRows"><tr><td colspan="9" class="empty">ارفع ملف الاستلامات لعرض التحليل.</td></tr></tbody></table></div></div>
-      <div class="tablewrap"><table><thead><tr><th>التاريخ</th><th>الجهة المستلمة (Warehouse)</th><th>المورد</th><th>فاتورة الشراء</th><th>كود الصنف</th><th>الصنف</th><th>كمية PO</th><th>كمية الاستلام</th><th>المتبقي</th><th>سعر الاستلام</th><th>الضريبة</th><th>قيمة الاستلام</th></tr></thead><tbody id="receiptRows"><tr><td colspan="12" class="empty">ارفع ملف الاستلامات الفعلية لعرض البيانات.</td></tr></tbody></table></div>
+      <div class="tablewrap"><table><thead><tr><th>التاريخ</th><th>المورد</th><th>فاتورة الشراء</th><th>كود الصنف</th><th>الصنف</th><th>كمية PO</th><th>كمية الاستلام</th><th>المتبقي</th><th>سعر الاستلام</th><th>الضريبة</th><th>قيمة الاستلام</th></tr></thead><tbody id="receiptRows"><tr><td colspan="11" class="empty">ارفع ملف الاستلامات الفعلية لعرض البيانات.</td></tr></tbody></table></div>
     </div>
   </section>
 
@@ -155,7 +200,7 @@
 const state={po:[],receipts:[],pr:[],prVendor:[],summary:[],history:[],month:"2026-10",users:[
  {name:"MOHAMED ATTIA",email:"mohamed.attia@sehhatahlmasr.com",role:"procurement_manager",active:true},
  {name:"LAMIAA MOHAMMED",email:"lamiaa.mohammed@sehhatahlmasr.com",role:"procurement_supervisor",active:true},
- {name:"MOHAMED ABDULRAHMAN",email:"mohamed.abdulrahman@sehhatahlmasr.com",role:"procurement_specialist",active:true}],aliases:[],audit:[],customModules:[]};
+ {name:"MOHAMED ABDULRAHMAN",email:"mohamed.abdulrahman@sehhatahlmasr.com",role:"procurement_specialist",active:true}],aliases:[],audit:[],customModules:[],award:{pr:[],offers:[],history:[],allocations:{},approved:false,month:"2026-10"}};
 
 // Supabase connection: publishable key only. Never place a service_role key in the browser.
 const SUPABASE_URL = 'https://odlkkziyhbxkqepnsqfm.supabase.co';
@@ -171,7 +216,7 @@ const $=id=>document.getElementById(id);
 let currentProfile = null, workspaceChannel = null, saveTimer = null, applyingRemote = false;
 const cloudFiles = [];
 function setCloudStatus(message, good=true){const el=document.getElementById('cloudStatus');if(el){el.textContent=message;el.style.color=good?'#15966a':'#c2414b'}}
-function serializableState(){return {po:state.po,receipts:state.receipts,pr:state.pr,prVendor:state.prVendor,summary:state.summary,history:state.history,month:state.month,aliases:state.aliases,audit:state.audit,customModules:state.customModules,cloudFiles};}
+function serializableState(){return {po:state.po,receipts:state.receipts,pr:state.pr,prVendor:state.prVendor,summary:state.summary,history:state.history,month:state.month,aliases:state.aliases,audit:state.audit,customModules:state.customModules,award:state.award,cloudFiles};}
 async function persistWorkspace(){
  if(!currentProfile || applyingRemote) return;
  const payload=serializableState();
@@ -183,7 +228,7 @@ function scheduleWorkspaceSave(){if(!currentProfile||applyingRemote)return;clear
 async function loadWorkspace(showToast=false){
  const {data,error}=await sb.from('procurement_workspace').select('payload,updated_by').eq('workspace_key','main').maybeSingle();
  if(error) throw error;
- if(data?.payload){applyingRemote=true;const p=data.payload;for(const k of ['po','receipts','pr','prVendor','summary','history','month','aliases','audit','customModules'])if(p[k]!==undefined)state[k]=p[k];cloudFiles.splice(0,cloudFiles.length,...(p.cloudFiles||[]));const allMonths=[...new Set([state.month,...state.pr,...state.po,...state.receipts].map(x=>x.month).filter(Boolean))].sort();$('monthFilter').innerHTML=allMonths.map(m=>`<option value="${m}">${m}</option>`).join('');$('monthFilter').value=state.month;draw();applyingRemote=false;}
+ if(data?.payload){applyingRemote=true;const p=data.payload;for(const k of ['po','receipts','pr','prVendor','summary','history','month','aliases','audit','customModules','award'])if(p[k]!==undefined)state[k]=p[k];cloudFiles.splice(0,cloudFiles.length,...(p.cloudFiles||[]));const allMonths=[...new Set([state.month,...state.pr,...state.po,...state.receipts].map(x=>x.month).filter(Boolean))].sort();$('monthFilter').innerHTML=allMonths.map(m=>`<option value="${m}">${m}</option>`).join('');$('monthFilter').value=state.month;draw();applyingRemote=false;}
  else {await persistWorkspace();}
  if(showToast)toast('تم تحميل بيانات الفريق من قاعدة البيانات المركزية');
 }
@@ -263,7 +308,7 @@ function readSheet(file,kind){
  }else{
   let aoa=XLSX.utils.sheet_to_json(ws,{header:1,defval:'',raw:true});let hi=aoa.findIndex(row=>row.some(c=>norm(c)==='trx date')&&row.some(c=>norm(c)==='item code'));if(hi<0)throw Error('لم يتم العثور على صف عناوين Purchase Transactions');
   let headers=aoa[hi];rows=aoa.slice(hi+1).map(a=>Object.fromEntries(headers.map((h,i)=>[String(h).trim(),a[i]??''])));
-  resolve(rows.map((r,i)=>{let q=num(getCell(r,['Quantity'])),up=num(getCell(r,['Unit Price'])),before=num(getCell(r,['Total After Discount'])||getCell(r,['Total'])),after=num(getCell(r,['Total After Tax']));let hasTax=after>0&&before>0&&after>before;return {month:dateMonth(getCell(r,['Trx Date'])),date:getCell(r,['Trx Date']),warehouse:String(getCell(r,['Warehouse'])).trim(),supplier:String(getCell(r,['Vendor'])).trim(),code:String(getCell(r,['Item Code'])).trim(),item:String(getCell(r,['Item'])).trim(),qty:q,unitPrice:up,value:before||q*up,valueAfterTax:after,receiptTaxFlag:hasTax?'نعم':after>0?'غير ظاهر/غير محسوم':'غير محدد',receiptTaxAmount:after>before?after-before:0,invoice:String(getCell(r,['Purchase Invoice'])),vendorInvoice:String(getCell(r,['Vendor Invoice No.'])),sourceFile:file.name,sourceRow:i+hi+2}}).filter(x=>x.supplier&&x.code&&x.qty>=0));
+  resolve(rows.map((r,i)=>{let q=num(getCell(r,['Quantity'])),up=num(getCell(r,['Unit Price'])),before=num(getCell(r,['Total After Discount'])||getCell(r,['Total'])),after=num(getCell(r,['Total After Tax']));let hasTax=after>0&&before>0&&after>before;return {month:dateMonth(getCell(r,['Trx Date'])),date:getCell(r,['Trx Date']),supplier:String(getCell(r,['Vendor'])).trim(),code:String(getCell(r,['Item Code'])).trim(),item:String(getCell(r,['Item'])).trim(),qty:q,unitPrice:up,value:before||q*up,valueAfterTax:after,receiptTaxFlag:hasTax?'نعم':after>0?'غير ظاهر/غير محسوم':'غير محدد',receiptTaxAmount:after>before?after-before:0,invoice:String(getCell(r,['Purchase Invoice'])),vendorInvoice:String(getCell(r,['Vendor Invoice No.'])),sourceFile:file.name,sourceRow:i+hi+2}}).filter(x=>x.supplier&&x.code&&x.qty>=0));
  }
  }catch(err){reject(err)}};r.onerror=reject;r.readAsArrayBuffer(file)});
 }
@@ -277,64 +322,27 @@ function aggregate(){
 }
 function monthFromName(name){let n=String(name||'').toLowerCase(),months={january:'01',jan:'01',february:'02',feb:'02',march:'03',mar:'03',april:'04',apr:'04',may:'05',june:'06',jun:'06',july:'07',jul:'07',august:'08',aug:'08',september:'09',sep:'09',october:'10',oct:'10',november:'11',nov:'11',december:'12',dec:'12'};for(let [k,v] of Object.entries(months))if(new RegExp('(^|[^a-z])'+k+'([^a-z]|$)').test(n))return '2026-'+v;return '2026-10'}
 function readPR(file){return new Promise((resolve,reject)=>{let r=new FileReader();r.onload=e=>{try{let w=XLSX.read(e.target.result,{type:'array',cellDates:true}),main=w.Sheets['Sheet1']||w.Sheets[w.SheetNames[0]],a=XLSX.utils.sheet_to_json(main,{defval:'',raw:true});let month=monthFromName(file.name);let pr=a.map((x,i)=>({month,supplier:'ALL PR',code:String(getCell(x,['Item Code'])).trim(),item:String(getCell(x,['Item Name'])).trim(),uom:String(getCell(x,['Default UOM'])).trim(),qty:num(getCell(x,['order'])),unitCost:num(getCell(x,['unit cost'])),value:num(getCell(x,['total cost'])),sourceSheet:'Sheet1',sourceRow:i+2})).filter(x=>x.code&&x.qty>0);let pv=[];for(let sn of w.SheetNames){if(['Sheet1','Sheet2'].includes(sn.toLowerCase()))continue;let sh=w.Sheets[sn],aoa=XLSX.utils.sheet_to_json(sh,{header:1,defval:'',raw:true});let hi=aoa.findIndex(row=>row.some(c=>norm(c)==='item code')&&row.some(c=>norm(c)==='qty'));if(hi<0)continue;let hdr=aoa[hi],vendor=String(aoa[0]?.[1]||sn).trim(),date=aoa[0]?.[3]||aoa[0]?.[2]||'';let m=(String(date).match(/\d{4}/)?dateMonth(date):'')||month;for(let i=hi+1;i<aoa.length;i++){let obj=Object.fromEntries(hdr.map((h,j)=>[norm(h),aoa[i][j]??'']));let code=String(obj['item code']??'').trim(),qty=num(obj.qty);if(code&&qty>0)pv.push({month:m,supplier:vendor,code,item:String(obj['item name']??''),qty,unitCost:num(obj.cost),value:num(obj.total),sourceSheet:sn,sourceRow:i+1})}}resolve({pr,prVendor:pv,month:pr[0]?.month||'2026-10'})}catch(err){reject(err)}};r.onerror=reject;r.readAsArrayBuffer(file)})}
-function warehouseKey(name){
- const n=norm(name).toLowerCase()
-  .replace(/[أإآ]/g,'ا').replace(/ة/g,'ه').replace(/[ًٌٍَُِّْـ]/g,'')
-  .replace(/[().،,]/g,' ').replace(/\\s+/g,' ').trim();
- return n;
-}
-function warehouseGroup(name){
- const n=warehouseKey(name);
- if(!n)return 'غير محدد';
- if((n.includes('seven seas pharma') && n.includes('19')) ||
-    (n.includes('سفن سيز فارما') && n.includes('19'))) return 'المخزن الرئيسي';
- const exact=(arr)=>arr.some(x=>warehouseKey(x)===n);
- const golf=[
-  'صيدلية د. مينا رؤوف راجي (أرض الجولف)',
-  '(مدينة نصر) صيدلية أول مايو Chronic',
-  '(المنيل) صيدلية د. صفية Chronic',
-  '(المقطم) صيدلية د. محمد عبد اللطيف العجرودي Chronic',
-  'صيدلية د. أحمد السيد (الشروق) Chronic'
- ];
- const branches=[
-  'صيدلية د. أحمد السيد (الشروق)',
-  '(مدينة نصر) صيدلية أول مايو',
-  '(المنيل) صيدلية د. صفية',
-  '(المقطم) صيدلية د. محمد عبد اللطيف العجرودي'
- ];
- if(exact(golf))return 'مجموعة الجولف';
- if(exact(branches))return 'الفروع';
- return 'غير محدد';
-}
-function warehouseStats(){const rc=state.receipts.filter(x=>x.month===state.month),prCodes=new Set(state.pr.filter(x=>x.month===state.month).map(x=>norm(x.code)).filter(Boolean)),totQty=rc.reduce((a,x)=>a+x.qty,0),totVal=rc.reduce((a,x)=>a+x.value,0),m={};for(const x of rc){const group=warehouseGroup(x.warehouse),g=m[group]||{group,rows:0,qty:0,value:0,codes:new Set(),prCodes:new Set()};g.rows++;g.qty+=x.qty;g.value+=x.value;g.codes.add(norm(x.code));if(prCodes.has(norm(x.code)))g.prCodes.add(norm(x.code));m[group]=g;}return Object.values(m).sort((a,b)=>['المخزن الرئيسي','مجموعة الجولف','الفروع','غير محدد'].indexOf(a.group)-['المخزن الرئيسي','مجموعة الجولف','الفروع','غير محدد'].indexOf(b.group)).map(g=>({...g,qtyShare:totQty?g.qty/totQty:null,valueShare:totVal?g.value/totVal:null,itemCoverage:prCodes.size?g.prCodes.size/prCodes.size:null}));}
-function renderWarehouse(){
- const a=warehouseStats();
- const html=a.map(g=>`<tr><td>${esc(g.group)}</td><td class="num">${fmt(g.rows)}</td><td class="num">${fmt(g.qty)}</td><td>${pct(g.qtyShare)}</td><td class="num">${fmt(g.value)}</td><td>${pct(g.valueShare)}</td><td class="num">${fmt(g.codes.size)}</td><td class="num">${fmt(g.prCodes.size)}</td><td>${pct(g.itemCoverage)}</td></tr>`).join('')||'<tr><td colspan="9" class="empty">لا توجد استلامات لهذا الشهر.</td></tr>';
- if($('warehouseRows'))$('warehouseRows').innerHTML=html;
- if($('warehouseDashboardRows'))$('warehouseDashboardRows').innerHTML=html;
-}
-function exportWarehouse(){const a=warehouseStats();const rc=state.receipts.filter(x=>x.month===state.month);exportWorkbook('Warehouse_Receipt_Analysis_'+state.month,[{name:'Group Summary',rows:a.map(g=>({'Group':g.group,'Receipt Transactions':g.rows,'Received Qty':g.qty,'Share of Total Qty':g.qtyShare,'Receipt Value':g.value,'Share of Total Value':g.valueShare,'Distinct Received Items':g.codes.size,'PR Items With Receipts':g.prCodes.size,'PR Item List Coverage':g.itemCoverage}))},{name:'Receipt Details',rows:rc.map(x=>({'Month':x.month,'Date':x.date,'Warehouse':x.warehouse||'غير محدد','Group':warehouseGroup(x.warehouse),'Supplier':x.supplier,'Item Code':x.code,'Item Name':x.item,'Received Qty':x.qty,'Receipt Value':x.value,'Value After Tax':x.valueAfterTax,'Source File':x.sourceFile,'Source Row':x.sourceRow}))}]);}
-function renderPR(){let all=state.pr.filter(x=>x.month===state.month),q=norm($('prSearch')?.value||''),a=all.filter(x=>!q||norm(x.code+' '+x.item).includes(q)),rec={};for(let x of state.receipts.filter(x=>x.month===state.month)){let k=norm(x.code);rec[k]=(rec[k]||0)+x.qty}let supplierByCode={};for(let x of state.prVendor.filter(x=>x.month===state.month)){let k=norm(x.code);(supplierByCode[k]??=[]).push(x.supplier)}let sum=(k)=>all.reduce((s,x)=>s+(x[k]||0),0);$('prItems').textContent=all.length?new Set(all.map(x=>x.code)).size:'—';$('prQty').textContent=all.length?fmt(sum('qty')):'—';$('prTotal').textContent=all.length?fmt(sum('value')):'—';$('prVendors').textContent=new Set(state.prVendor.filter(x=>x.month===state.month).map(x=>x.supplier)).size||'—';$('prRows').innerHTML=a.slice(0,500).map(x=>{let got=rec[norm(x.code)]||0, suppliers=(supplierByCode[norm(x.code)]||[]).join('، ')||'غير مخصص';return `<tr><td>${esc(suppliers)}</td><td>${esc(x.code)}</td><td>${esc(x.item)}</td><td>${esc(x.uom)}</td><td class="num">${fmt(x.qty)}</td><td class="num">${fmt(got)}</td><td>${pct(x.qty?got/x.qty:null)}</td></tr>`}).join('')||'<tr><td colspan="7" class="empty">ارفع ملف PR لعرض المقارنة.</td></tr>';let groups={};for(let x of state.prVendor.filter(x=>x.month===state.month)){let g=groups[canonSupplier(x.supplier)]||{supplier:x.supplier,qty:0,value:0,codes:new Set()};g.qty+=x.qty;g.value+=x.value;g.codes.add(norm(x.code));groups[canonSupplier(x.supplier)]=g}$('prVendorRows').innerHTML=Object.values(groups).map(g=>`<tr><td>${esc(g.supplier)}</td><td>${g.codes.size}</td><td class="num">${fmt(g.qty)}</td><td class="num">${fmt(g.value)}</td></tr>`).join('')||'<tr><td colspan="4" class="empty">لم يتم استخراج شيتات موردين من ملف PR.</td></tr>'}
+function renderPR(){let a=state.pr.filter(x=>x.month===state.month),rec={};for(let x of state.receipts.filter(x=>x.month===state.month)){let k=norm(x.code);rec[k]=(rec[k]||0)+x.qty}let supplierByCode={};for(let x of state.prVendor.filter(x=>x.month===state.month)){let k=norm(x.code);(supplierByCode[k]??=[]).push(x.supplier)}let sum=(k)=>a.reduce((s,x)=>s+(x[k]||0),0);$('prItems').textContent=a.length?new Set(a.map(x=>x.code)).size:'—';$('prQty').textContent=a.length?fmt(sum('qty')):'—';$('prTotal').textContent=a.length?fmt(sum('value')):'—';$('prVendors').textContent=new Set(state.prVendor.filter(x=>x.month===state.month).map(x=>x.supplier)).size||'—';$('prRows').innerHTML=a.slice(0,500).map(x=>{let got=rec[norm(x.code)]||0, suppliers=(supplierByCode[norm(x.code)]||[]).join('، ')||'غير مخصص';return `<tr><td>${esc(suppliers)}</td><td>${esc(x.code)}</td><td>${esc(x.item)}</td><td>${esc(x.uom)}</td><td class="num">${fmt(x.qty)}</td><td class="num">${fmt(got)}</td><td>${pct(x.qty?got/x.qty:null)}</td></tr>`}).join('')||'<tr><td colspan="7" class="empty">ارفع ملف PR لعرض المقارنة.</td></tr>';let groups={};for(let x of state.prVendor.filter(x=>x.month===state.month)){let g=groups[canonSupplier(x.supplier)]||{supplier:x.supplier,qty:0,value:0,codes:new Set()};g.qty+=x.qty;g.value+=x.value;g.codes.add(norm(x.code));groups[canonSupplier(x.supplier)]=g}$('prVendorRows').innerHTML=Object.values(groups).map(g=>`<tr><td>${esc(g.supplier)}</td><td>${g.codes.size}</td><td class="num">${fmt(g.qty)}</td><td class="num">${fmt(g.value)}</td></tr>`).join('')||'<tr><td colspan="4" class="empty">لم يتم استخراج شيتات موردين من ملف PR.</td></tr>'}
 function exportWorkbook(filename,sheets){
  if(!window.XLSX){toast('مكتبة Excel غير متاحة');return}
  const wb=XLSX.utils.book_new();
  for(const sh of sheets){const rows=sh.rows||[];const ws=XLSX.utils.json_to_sheet(rows);XLSX.utils.book_append_sheet(wb,ws,(sh.name||'Data').slice(0,31))}
  XLSX.writeFile(wb,filename+'.xlsx');toast('تم تجهيز ملف Excel')
 }
-function exportPR(){const q=norm($('prSearch')?.value||''),a=state.pr.filter(x=>x.month===state.month&&(!q||norm(x.code+' '+x.item).includes(q))); const alloc=state.prVendor.filter(x=>x.month===state.month);exportWorkbook('PR_'+state.month,[{name:'PR Overall',rows:a.map(x=>({'Month':x.month,'Item Code':x.code,'Item Name':x.item,'Allocated Supplier(s)':[...new Set(alloc.filter(v=>norm(v.code)===norm(x.code)).map(v=>v.supplier))].join(', '),'UOM':x.uom,'Requested Qty':x.qty,'Unit Cost':x.unitCost,'Total Cost':x.value,'Source Sheet':x.sourceSheet,'Source Row':x.sourceRow}))},{name:'Supplier Allocation',rows:alloc.map(x=>({'Month':x.month,'Supplier':x.supplier,'Item Code':x.code,'Item Name':x.item,'Allocated Qty':x.qty,'Unit Cost':x.unitCost,'Total Cost':x.value,'Source Sheet':x.sourceSheet,'Source Row':x.sourceRow}))},{name:'PR Summary',rows:[{'Month':state.month,'Total PR Value':a.reduce((s,x)=>s+x.value,0),'Total PR Qty':a.reduce((s,x)=>s+x.qty,0),'Distinct Items':new Set(a.map(x=>x.code)).size}]}])}
+function exportPR(){const a=state.pr.filter(x=>x.month===state.month);const alloc=state.prVendor.filter(x=>x.month===state.month);exportWorkbook('PR_'+state.month,[{name:'PR Overall',rows:a.map(x=>({'Month':x.month,'Item Code':x.code,'Item Name':x.item,'Allocated Supplier(s)':[...new Set(alloc.filter(v=>norm(v.code)===norm(x.code)).map(v=>v.supplier))].join(', '),'UOM':x.uom,'Requested Qty':x.qty,'Unit Cost':x.unitCost,'Total Cost':x.value,'Source Sheet':x.sourceSheet,'Source Row':x.sourceRow}))},{name:'Supplier Allocation',rows:alloc.map(x=>({'Month':x.month,'Supplier':x.supplier,'Item Code':x.code,'Item Name':x.item,'Allocated Qty':x.qty,'Unit Cost':x.unitCost,'Total Cost':x.value,'Source Sheet':x.sourceSheet,'Source Row':x.sourceRow}))},{name:'PR Summary',rows:[{'Month':state.month,'Total PR Value':a.reduce((s,x)=>s+x.value,0),'Total PR Qty':a.reduce((s,x)=>s+x.qty,0),'Distinct Items':new Set(a.map(x=>x.code)).size}]}])}
 function poReceiptLookup(x){return state.summary.find(z=>z.month===x.month&&canonSupplier(z.supplier)===canonSupplier(x.supplier)&&norm(z.code)===norm(x.code))||{received:0,remaining:x.qty,receiptValue:0}}
-function exportPO(){const q=norm($('poSearch')?.value||''),a=poGroupedRows().filter(x=>x.month===state.month&&(!q||norm(x.supplier+' '+x.code+' '+x.item).includes(q))); const detailed=a.map(x=>{let rr=state.receipts.filter(r=>r.month===x.month&&canonSupplier(r.supplier)===canonSupplier(x.supplier)&&norm(r.code)===norm(x.code)),rq=rr.reduce((s,r)=>s+r.qty,0),rv=rr.reduce((s,r)=>s+r.value,0),ru=rq?rr.reduce((s,r)=>s+r.qty*r.unitPrice,0)/rq:0;return {'Month':x.month,'PO Date':x.date,'Supplier':x.supplier,'Item Code':x.code,'Item Name':x.item,'PO Qty':x.qty,'Received Qty':rq,'Remaining Qty':Math.max(0,x.qty-rq),'PO Unit Price':x.unitPrice,'Receipt Avg Unit Price':ru,'PO Tax':x.taxFlag||'غير محدد في الملف','PO Tax Amount':x.taxAmount||'','Receipt Tax':rr.map(r=>r.receiptTaxFlag).filter(Boolean).join(', '),'PO Value':x.value,'Receipt Value':rv,'Source Files':x.sourceFiles}});exportWorkbook('Purchase_Orders_'+state.month,[{name:'PO Lines vs Receipts',rows:detailed},{name:'Items To Reorder',rows:detailed.filter(x=>x['Remaining Qty']>0).map(x=>({...x,'Suggested Reorder Qty':x['Remaining Qty']}))},{name:'PO Summary',rows:[{'Month':state.month,'Lines':state.po.filter(x=>x.month===state.month).length,'Distinct Supplier Items':a.length,'Suppliers':new Set(a.map(x=>x.supplier)).size,'Total Qty':a.reduce((s,x)=>s+x.qty,0),'Total PO Value':a.reduce((s,x)=>s+x.value,0)}]}])}
-function exportReceipts(){const a=state.receipts.filter(x=>x.month===state.month),g=receiptGroupedRows();exportWorkbook('Actual_Receipts_'+state.month,[{name:'Receipt Lines',rows:a.map(x=>({'Month':x.month,'Transaction Date':x.date,'Warehouse':x.warehouse||'غير محدد','Group':warehouseGroup(x.warehouse),'Supplier':x.supplier,'Purchase Invoice':x.invoice,'Vendor Invoice No':x.vendorInvoice,'Item Code':x.code,'Item Name':x.item,'Received Qty':x.qty,'Unit Price':x.unitPrice,'Value Used Before Tax':x.value,'Total After Tax':x.valueAfterTax,'Receipt Tax':x.receiptTaxFlag,'Receipt Tax Amount':x.receiptTaxAmount,'Source File':x.sourceFile,'Source Row':x.sourceRow}))},{name:'PO Qty vs Received',rows:g.map(x=>{let m=state.summary.find(z=>z.month===x.month&&canonSupplier(z.supplier)===canonSupplier(x.supplier)&&norm(z.code)===norm(x.code));return {'Month':x.month,'Supplier':x.supplier,'Item Code':x.code,'Item Name':x.item,'PO Qty':m?.ordered||0,'Received Qty':x.qty,'Remaining Qty':Math.max(0,(m?.ordered||0)-x.qty),'Avg Receipt Unit Price':x.unitPrice,'Receipt Tax':x.receiptTaxFlag,'Receipt Value':x.value}})}])}
+function exportPO(){const a=poGroupedRows();const detailed=a.map(x=>{let rr=state.receipts.filter(r=>r.month===x.month&&canonSupplier(r.supplier)===canonSupplier(x.supplier)&&norm(r.code)===norm(x.code)),rq=rr.reduce((s,r)=>s+r.qty,0),rv=rr.reduce((s,r)=>s+r.value,0),ru=rq?rr.reduce((s,r)=>s+r.qty*r.unitPrice,0)/rq:0;return {'Month':x.month,'PO Date':x.date,'Supplier':x.supplier,'Item Code':x.code,'Item Name':x.item,'PO Qty':x.qty,'Received Qty':rq,'Remaining Qty':Math.max(0,x.qty-rq),'PO Unit Price':x.unitPrice,'Receipt Avg Unit Price':ru,'PO Tax':x.taxFlag||'غير محدد في الملف','PO Tax Amount':x.taxAmount||'','Receipt Tax':rr.map(r=>r.receiptTaxFlag).filter(Boolean).join(', '),'PO Value':x.value,'Receipt Value':rv,'Source Files':x.sourceFiles}});exportWorkbook('Purchase_Orders_'+state.month,[{name:'PO Lines vs Receipts',rows:detailed},{name:'Items To Reorder',rows:detailed.filter(x=>x['Remaining Qty']>0).map(x=>({...x,'Suggested Reorder Qty':x['Remaining Qty']}))},{name:'PO Summary',rows:[{'Month':state.month,'Lines':state.po.filter(x=>x.month===state.month).length,'Distinct Supplier Items':a.length,'Suppliers':new Set(a.map(x=>x.supplier)).size,'Total Qty':a.reduce((s,x)=>s+x.qty,0),'Total PO Value':a.reduce((s,x)=>s+x.value,0)}]}])}
+function exportReceipts(){const a=state.receipts.filter(x=>x.month===state.month),g=receiptGroupedRows();exportWorkbook('Actual_Receipts_'+state.month,[{name:'Receipt Lines',rows:a.map(x=>({'Month':x.month,'Transaction Date':x.date,'Supplier':x.supplier,'Purchase Invoice':x.invoice,'Vendor Invoice No':x.vendorInvoice,'Item Code':x.code,'Item Name':x.item,'Received Qty':x.qty,'Unit Price':x.unitPrice,'Value Used Before Tax':x.value,'Total After Tax':x.valueAfterTax,'Receipt Tax':x.receiptTaxFlag,'Receipt Tax Amount':x.receiptTaxAmount,'Source File':x.sourceFile,'Source Row':x.sourceRow}))},{name:'PO Qty vs Received',rows:g.map(x=>{let m=state.summary.find(z=>z.month===x.month&&canonSupplier(z.supplier)===canonSupplier(x.supplier)&&norm(z.code)===norm(x.code));return {'Month':x.month,'Supplier':x.supplier,'Item Code':x.code,'Item Name':x.item,'PO Qty':m?.ordered||0,'Received Qty':x.qty,'Remaining Qty':Math.max(0,(m?.ordered||0)-x.qty),'Avg Receipt Unit Price':x.unitPrice,'Receipt Tax':x.receiptTaxFlag,'Receipt Value':x.value}})}])}
 function exportComparison(){const pg=poGroupedRows();exportWorkbook('PO_vs_Receipts_'+state.month,[{name:'Comparison',rows:state.summary.map(x=>{let p=pg.find(z=>z.month===x.month&&canonSupplier(z.supplier)===canonSupplier(x.supplier)&&norm(z.code)===norm(x.code));return {'Month':x.month,'Supplier':x.supplier,'Item Code':x.code,'Item Name':x.item,'PO Qty':x.ordered,'Received Qty':x.received,'Remaining Qty':Math.max(0,x.remaining),'Achievement %':x.rate===null?'':x.rate,'PO Unit Price':p?.unitPrice||0,'Receipt Avg Unit Price':x.received?state.receipts.filter(r=>r.month===x.month&&canonSupplier(r.supplier)===canonSupplier(x.supplier)&&norm(r.code)===norm(x.code)).reduce((v,r)=>v+r.qty*r.unitPrice,0)/x.received:0,'PO Tax':p?.taxFlag||'غير محدد في الملف','PO Value':x.poValue,'Receipt Value':x.receiptValue,'Status':x.status}})}])}
 function exportSuppliers(){const rows=[...$('supplierDetailRows').querySelectorAll('tr')].filter(tr=>tr.children.length>1).map(tr=>[...tr.children].map(td=>td.textContent.trim()));exportWorkbook('Supplier_Performance_'+state.month,[{name:'Supplier KPI',rows:rows.map(r=>({'Supplier':r[0],'PR Allocated Value':r[1],'Actual Receipt Value':r[2],'Remaining Value':r[3],'Value Achievement':r[4],'Share of Achieved':r[5],'Items':r[6]}))}])}
-function exportDashboard(){const pr=state.pr.filter(x=>x.month===state.month),rc=state.receipts.filter(x=>x.month===state.month),po=state.po.filter(x=>x.month===state.month);const pval=pr.reduce((s,x)=>s+x.value,0);const codes=new Set(pr.map(x=>norm(x.code)));const matched=rc.filter(x=>codes.has(norm(x.code)));const achieved=matched.reduce((s,x)=>s+x.value,0);const itemRows=getPRItemFulfillment(),total=itemRows.length,full=itemRows.filter(x=>x.status==='كامل').length,partial=itemRows.filter(x=>x.status==='جزئي').length,zero=itemRows.filter(x=>x.status==='غير مورد').length;exportWorkbook('Procurement_Dashboard_'+state.month,[{name:'KPI Summary',rows:[{'Month':state.month,'Total PR Value':pval,'Actual Receipt Matched Value':achieved,'Value Achievement %':pval?achieved/pval:0,'Total PO Value':po.reduce((s,x)=>s+(x.value||x.qty*x.unitPrice),0),'Unmatched Receipt Value':rc.filter(x=>!codes.has(norm(x.code))).reduce((s,x)=>s+x.value,0),'Total Distinct PR Items':total,'Fully Supplied Items':full,'Fully Supplied %':total?full/total:0,'Partially Supplied Items':partial,'Partially Supplied %':total?partial/total:0,'Not Supplied Items':zero,'Not Supplied %':total?zero/total:0}]},{name:'PR Item Fulfillment',rows:itemRows.map(x=>({'Item Code':x.code,'Item Name':x.item,'Requested Qty':x.requestedQty,'Received Qty':x.receivedQty,'Fulfillment %':x.fulfillment,'Status':x.status}))},{name:'Warehouse Groups',rows:warehouseStats().map(g=>({'Group':g.group,'Receipt Transactions':g.rows,'Received Qty':g.qty,'Share of Total Qty':g.qtyShare,'Receipt Value':g.value,'Share of Total Value':g.valueShare,'Distinct Received Items':g.codes.size,'PR Items With Receipts':g.prCodes.size,'PR Item List Coverage':g.itemCoverage}))},{name:'Supplier KPI',rows:[...$('supplierDetailRows').querySelectorAll('tr')].filter(tr=>tr.children.length>1).map(tr=>{const c=[...tr.children].map(td=>td.textContent.trim());return {'Supplier':c[0],'PR Allocated Value':c[1],'Actual Receipt Value':c[2],'Remaining Value':c[3],'Achievement':c[4],'Share of Achieved':c[5],'Items':c[6]}})}])}
+function exportDashboard(){const pr=state.pr.filter(x=>x.month===state.month),rc=state.receipts.filter(x=>x.month===state.month),po=state.po.filter(x=>x.month===state.month);const pval=pr.reduce((s,x)=>s+x.value,0);const codes=new Set(pr.map(x=>norm(x.code)));const matched=rc.filter(x=>codes.has(norm(x.code)));const achieved=matched.reduce((s,x)=>s+x.value,0);exportWorkbook('Procurement_Dashboard_'+state.month,[{name:'KPI Summary',rows:[{'Month':state.month,'Total PR Value':pval,'Actual Receipt Matched Value':achieved,'Value Achievement %':pval?achieved/pval:0,'Total PO Value':po.reduce((s,x)=>s+(x.value||x.qty*x.unitPrice),0),'Unmatched Receipt Value':rc.filter(x=>!codes.has(norm(x.code))).reduce((s,x)=>s+x.value,0)}]},{name:'Supplier KPI',rows:[...$('supplierDetailRows').querySelectorAll('tr')].filter(tr=>tr.children.length>1).map(tr=>{const c=[...tr.children].map(td=>td.textContent.trim());return {'Supplier':c[0],'PR Allocated Value':c[1],'Actual Receipt Value':c[2],'Remaining Value':c[3],'Achievement':c[4],'Share of Achieved':c[5],'Items':c[6]}})}])}
 function supplierPOStats(){const po=state.po.filter(x=>x.month===state.month),rc=state.receipts.filter(x=>x.month===state.month);const groups={};for(const x of po){const k=canonSupplier(x.supplier);const g=groups[k]||{supplier:x.supplier,poValue:0,receiptValue:0,poQty:0,receiptQty:0,codes:new Set()};g.poValue+=x.value||x.qty*x.unitPrice;g.poQty+=x.qty;g.codes.add(norm(x.code));groups[k]=g}for(const x of rc){const k=canonSupplier(x.supplier),g=groups[k];if(g&&g.codes.has(norm(x.code))){g.receiptValue+=x.value;g.receiptQty+=x.qty}}return Object.values(groups).sort((a,b)=>b.poValue-a.poValue)}
 function renderSupplierPO(){const rows=supplierPOStats();$('supplierPORows').innerHTML=rows.map(g=>`<tr><td>${esc(g.supplier)}</td><td class="num">${fmt(g.poValue)}</td><td class="num">${fmt(g.receiptValue)}</td><td class="num">${fmt(g.poValue-g.receiptValue)}</td><td>${pct(g.poValue?g.receiptValue/g.poValue:null)}</td><td class="num">${fmt(g.poQty)}</td><td class="num">${fmt(g.receiptQty)}</td><td>${pct(g.poQty?g.receiptQty/g.poQty:null)}</td></tr>`).join('')||'<tr><td colspan="8" class="empty">لا توجد بيانات PO لهذا الشهر.</td></tr>'}
 function exportSupplierPO(){exportWorkbook('Supplier_PO_Fulfillment_'+state.month,[{name:'Supplier PO KPI',rows:supplierPOStats().map(g=>({'Supplier':g.supplier,'PO Value':g.poValue,'Actual Receipt Value':g.receiptValue,'Remaining PO Value':g.poValue-g.receiptValue,'Value Achievement':g.poValue?g.receiptValue/g.poValue:0,'PO Qty':g.poQty,'Received Qty':g.receiptQty,'Qty Achievement':g.poQty?g.receiptQty/g.poQty:0}))}])}
-function poGroupedRows(month=state.month){const groups={};for(const x of state.po.filter(z=>z.month===month)){const k=[x.month,norm(x.warehouse||'غير محدد'),canonSupplier(x.supplier),norm(x.code)].join('|');let g=groups[k]||{...x,qty:0,value:0,taxFlags:new Set(),taxAmount:0,files:new Set()};g.qty+=x.qty;g.value+=x.value||x.qty*x.unitPrice;if(x.taxFlag)g.taxFlags.add(x.taxFlag);g.taxAmount+=x.taxAmount||0;if(x.sourceFile)g.files.add(x.sourceFile);groups[k]=g}return Object.values(groups).map(g=>({...g,unitPrice:g.qty?g.value/g.qty:g.unitPrice,taxFlag:g.taxFlags.size?[...g.taxFlags].join(' / '):null,sourceFiles:[...g.files].join(' | ')}))}
-function receiptGroupedRows(month=state.month){const groups={};for(const x of state.receipts.filter(z=>z.month===month)){const k=[x.month,norm(x.warehouse||'غير محدد'),canonSupplier(x.supplier),norm(x.code)].join('|');let g=groups[k]||{...x,qty:0,value:0,unitValue:0,valueAfterTax:0,taxFlags:new Set(),invoices:new Set(),rows:0};g.qty+=x.qty;g.value+=x.value;g.unitValue+=x.qty*x.unitPrice;g.valueAfterTax+=x.valueAfterTax||0;if(x.receiptTaxFlag)g.taxFlags.add(x.receiptTaxFlag);if(x.invoice)g.invoices.add(x.invoice);g.rows++;groups[k]=g}return Object.values(groups).map(g=>({...g,unitPrice:g.qty?g.unitValue/g.qty:0,receiptTaxFlag:[...g.taxFlags].join(' / ')||'غير محدد',invoice:[...g.invoices].join(', ')}))}
-function renderPurchaseOrders(){const raw=state.po.filter(x=>x.month===state.month),all=poGroupedRows(),q=norm($('poSearch')?.value||''),a=all.filter(x=>!q||norm(x.supplier+' '+x.code+' '+x.item).includes(q));$('poLines').textContent=fmt(raw.length);$('poSuppliers').textContent=new Set(raw.map(x=>x.supplier)).size;$('poTotalValue').textContent=fmt(a.reduce((s,x)=>s+(x.value||x.qty*x.unitPrice),0));$('poTotalQty').textContent=fmt(a.reduce((s,x)=>s+x.qty,0));$('poRows').innerHTML=a.map(x=>{let rr=state.receipts.filter(r=>r.month===x.month&&canonSupplier(r.supplier)===canonSupplier(x.supplier)&&norm(r.code)===norm(x.code)),rq=rr.reduce((s,r)=>s+r.qty,0),rv=rr.reduce((s,r)=>s+r.value,0),ru=rq?rr.reduce((s,r)=>s+r.qty*r.unitPrice,0)/rq:0,rf=[...new Set(rr.map(r=>r.receiptTaxFlag).filter(Boolean))].join('، ')||'غير محدد';return `<tr><td>${esc(x.date||'')}</td><td>${esc(x.supplier)}</td><td>${esc(x.code)}</td><td>${esc(x.item)}</td><td class="num">${fmt(x.qty)}</td><td class="num">${fmt(rq)}</td><td class="num">${fmt(Math.max(0,x.qty-rq))}</td><td class="num">${fmt(x.unitPrice)}</td><td class="num">${fmt(ru)}</td><td>${esc(x.taxFlag||'غير محدد في الملف')}</td><td>${esc(rf)}</td><td class="num">${fmt(x.value||x.qty*x.unitPrice)}</td><td class="num">${fmt(rv)}</td></tr>`}).join('')||'<tr><td colspan="13" class="empty">لا توجد أوامر شراء لهذا الشهر.</td></tr>';let reorder=a.map(x=>{let rr=state.receipts.filter(r=>r.month===x.month&&canonSupplier(r.supplier)===canonSupplier(x.supplier)&&norm(r.code)===norm(x.code)),got=rr.reduce((s,r)=>s+r.qty,0);return {...x,got,remaining:Math.max(0,x.qty-got)}}).filter(x=>x.remaining>0);$('reorderRows').innerHTML=reorder.map(x=>`<tr><td>${esc(x.supplier)}</td><td>${esc(x.code)}</td><td>${esc(x.item)}</td><td class="num">${fmt(x.qty)}</td><td class="num">${fmt(x.got)}</td><td class="num"><b>${fmt(x.remaining)}</b></td><td class="num">${fmt(x.unitPrice)}</td></tr>`).join('')||'<tr><td colspan="7" class="empty">لا توجد كميات متبقية من أوامر الشراء لهذا الشهر.</td></tr>'}
-function renderReceipts(){const raw=state.receipts.filter(x=>x.month===state.month),a=receiptGroupedRows();renderWarehouse();$('receiptLines').textContent=fmt(raw.length);$('receiptSuppliers').textContent=new Set(raw.map(x=>x.supplier)).size;$('receiptTotalValue').textContent=fmt(raw.reduce((s,x)=>s+x.value,0));$('receiptTotalQty').textContent=fmt(raw.reduce((s,x)=>s+x.qty,0));$('receiptRows').innerHTML=a.map(x=>{let m=state.summary.find(z=>z.month===x.month&&canonSupplier(z.supplier)===canonSupplier(x.supplier)&&norm(z.code)===norm(x.code)),poQty=m?.ordered||0,got=x.qty;return `<tr><td>${esc(x.date||'')}</td><td>${esc(x.warehouse||'غير محدد')}</td><td>${esc(x.supplier)}</td><td>${esc(x.invoice||'')}</td><td>${esc(x.code)}</td><td>${esc(x.item)}</td><td class="num">${fmt(poQty)}</td><td class="num">${fmt(got)}</td><td class="num">${fmt(Math.max(0,poQty-got))}</td><td class="num">${fmt(x.unitPrice)}</td><td>${esc(x.receiptTaxFlag)}</td><td class="num">${fmt(x.value)}</td></tr>`}).join('')||'<tr><td colspan="12" class="empty">لا توجد استلامات لهذا الشهر.</td></tr>'}
+function poGroupedRows(month=state.month){const groups={};for(const x of state.po.filter(z=>z.month===month)){const k=[x.month,canonSupplier(x.supplier),norm(x.code)].join('|');let g=groups[k]||{...x,qty:0,value:0,taxFlags:new Set(),taxAmount:0,files:new Set()};g.qty+=x.qty;g.value+=x.value||x.qty*x.unitPrice;if(x.taxFlag)g.taxFlags.add(x.taxFlag);g.taxAmount+=x.taxAmount||0;if(x.sourceFile)g.files.add(x.sourceFile);groups[k]=g}return Object.values(groups).map(g=>({...g,unitPrice:g.qty?g.value/g.qty:g.unitPrice,taxFlag:g.taxFlags.size?[...g.taxFlags].join(' / '):null,sourceFiles:[...g.files].join(' | ')}))}
+function receiptGroupedRows(month=state.month){const groups={};for(const x of state.receipts.filter(z=>z.month===month)){const k=[x.month,canonSupplier(x.supplier),norm(x.code)].join('|');let g=groups[k]||{...x,qty:0,value:0,unitValue:0,valueAfterTax:0,taxFlags:new Set(),invoices:new Set(),rows:0};g.qty+=x.qty;g.value+=x.value;g.unitValue+=x.qty*x.unitPrice;g.valueAfterTax+=x.valueAfterTax||0;if(x.receiptTaxFlag)g.taxFlags.add(x.receiptTaxFlag);if(x.invoice)g.invoices.add(x.invoice);g.rows++;groups[k]=g}return Object.values(groups).map(g=>({...g,unitPrice:g.qty?g.unitValue/g.qty:0,receiptTaxFlag:[...g.taxFlags].join(' / ')||'غير محدد',invoice:[...g.invoices].join(', ')}))}
+function renderPurchaseOrders(){const raw=state.po.filter(x=>x.month===state.month),a=poGroupedRows();$('poLines').textContent=fmt(raw.length);$('poSuppliers').textContent=new Set(raw.map(x=>x.supplier)).size;$('poTotalValue').textContent=fmt(a.reduce((s,x)=>s+(x.value||x.qty*x.unitPrice),0));$('poTotalQty').textContent=fmt(a.reduce((s,x)=>s+x.qty,0));$('poRows').innerHTML=a.map(x=>{let rr=state.receipts.filter(r=>r.month===x.month&&canonSupplier(r.supplier)===canonSupplier(x.supplier)&&norm(r.code)===norm(x.code)),rq=rr.reduce((s,r)=>s+r.qty,0),rv=rr.reduce((s,r)=>s+r.value,0),ru=rq?rr.reduce((s,r)=>s+r.qty*r.unitPrice,0)/rq:0,rf=[...new Set(rr.map(r=>r.receiptTaxFlag).filter(Boolean))].join('، ')||'غير محدد';return `<tr><td>${esc(x.date||'')}</td><td>${esc(x.supplier)}</td><td>${esc(x.code)}</td><td>${esc(x.item)}</td><td class="num">${fmt(x.qty)}</td><td class="num">${fmt(rq)}</td><td class="num">${fmt(Math.max(0,x.qty-rq))}</td><td class="num">${fmt(x.unitPrice)}</td><td class="num">${fmt(ru)}</td><td>${esc(x.taxFlag||'غير محدد في الملف')}</td><td>${esc(rf)}</td><td class="num">${fmt(x.value||x.qty*x.unitPrice)}</td><td class="num">${fmt(rv)}</td></tr>`}).join('')||'<tr><td colspan="13" class="empty">لا توجد أوامر شراء لهذا الشهر.</td></tr>';let reorder=a.map(x=>{let rr=state.receipts.filter(r=>r.month===x.month&&canonSupplier(r.supplier)===canonSupplier(x.supplier)&&norm(r.code)===norm(x.code)),got=rr.reduce((s,r)=>s+r.qty,0);return {...x,got,remaining:Math.max(0,x.qty-got)}}).filter(x=>x.remaining>0);$('reorderRows').innerHTML=reorder.map(x=>`<tr><td>${esc(x.supplier)}</td><td>${esc(x.code)}</td><td>${esc(x.item)}</td><td class="num">${fmt(x.qty)}</td><td class="num">${fmt(x.got)}</td><td class="num"><b>${fmt(x.remaining)}</b></td><td class="num">${fmt(x.unitPrice)}</td></tr>`).join('')||'<tr><td colspan="7" class="empty">لا توجد كميات متبقية من أوامر الشراء لهذا الشهر.</td></tr>'}
+function renderReceipts(){const raw=state.receipts.filter(x=>x.month===state.month),a=receiptGroupedRows();$('receiptLines').textContent=fmt(raw.length);$('receiptSuppliers').textContent=new Set(raw.map(x=>x.supplier)).size;$('receiptTotalValue').textContent=fmt(raw.reduce((s,x)=>s+x.value,0));$('receiptTotalQty').textContent=fmt(raw.reduce((s,x)=>s+x.qty,0));$('receiptRows').innerHTML=a.map(x=>{let m=state.summary.find(z=>z.month===x.month&&canonSupplier(z.supplier)===canonSupplier(x.supplier)&&norm(z.code)===norm(x.code)),poQty=m?.ordered||0,got=x.qty;return `<tr><td>${esc(x.date||'')}</td><td>${esc(x.supplier)}</td><td>${esc(x.invoice||'')}</td><td>${esc(x.code)}</td><td>${esc(x.item)}</td><td class="num">${fmt(poQty)}</td><td class="num">${fmt(got)}</td><td class="num">${fmt(Math.max(0,poQty-got))}</td><td class="num">${fmt(x.unitPrice)}</td><td>${esc(x.receiptTaxFlag)}</td><td class="num">${fmt(x.value)}</td></tr>`}).join('')||'<tr><td colspan="11" class="empty">لا توجد استلامات لهذا الشهر.</td></tr>'}
 function renderCustomModules(){const host=$('customModuleList');if(!host)return;host.innerHTML=state.customModules.map((m,i)=>`<div class="panel" style="margin-top:10px"><div class="panelhead"><div><b>${esc(m.name)}</b><div class="muted">${esc(m.description||'')}</div></div><div><button class="btn soft" data-modrename="${i}">تعديل الاسم</button> <button class="btn soft" data-modexport="${i}">تصدير Excel</button> <button class="btn soft" data-moddelete="${i}">حذف</button></div></div><div class="toolbar">${m.fields.map((f,j)=>`<input data-modfield="${i}:${j}" placeholder="${esc(f)}">`).join('')}<button class="btn primary" data-modadd="${i}">إضافة سجل</button></div><div class="tablewrap"><table><thead><tr>${m.fields.map(f=>`<th>${esc(f)}</th>`).join('')}</tr></thead><tbody>${m.rows.map(row=>`<tr>${m.fields.map(f=>`<td>${esc(row[f]||'')}</td>`).join('')}</tr>`).join('')||`<tr><td colspan="${m.fields.length}" class="empty">لا توجد سجلات.</td></tr>`}</tbody></table></div></div>`).join('')||'لم يتم إنشاء موديولات إضافية.';
  host.querySelectorAll('[data-modadd]').forEach(b=>b.onclick=()=>{let m=state.customModules[+b.dataset.modadd],row={};m.fields.forEach((f,j)=>row[f]=host.querySelector(`[data-modfield="${b.dataset.modadd}:${j}"]`).value);if(!Object.values(row).some(v=>String(v).trim())){toast('أدخل بيانات السجل');return}m.rows.push(row);audit('إضافة سجل موديول',m.name);renderCustomModules()});
  host.querySelectorAll('[data-modexport]').forEach(b=>b.onclick=()=>{let m=state.customModules[+b.dataset.modexport];exportWorkbook('Custom_'+m.name.replace(/[^\w\u0600-\u06FF-]/g,'_'),[{name:'Data',rows:m.rows}])});
@@ -344,33 +352,12 @@ function renderCustomModules(){const host=$('customModuleList');if(!host)return;
 function renderSettings(){if(!$('userRows'))return;$('userRows').innerHTML=state.users.map((u,i)=>`<tr><td>${esc(u.name)}</td><td>${esc(u.email||'—')}</td><td><select data-role="${i}"><option value="procurement_manager" ${u.role==='procurement_manager'?'selected':''}>Manager / Admin</option><option value="procurement_supervisor" ${u.role==='procurement_supervisor'?'selected':''}>Supervisor</option><option value="procurement_specialist" ${u.role==='procurement_specialist'?'selected':''}>Specialist</option></select></td><td>✓</td><td>✓</td><td>${u.role==='procurement_manager'?'✓':'—'}</td><td><button class="btn soft" data-toggle="${i}">${u.active?'إيقاف':'تفعيل'}</button></td></tr>`).join('');document.querySelectorAll('[data-role]').forEach(el=>{el.disabled=currentProfile?.role!=='admin';el.onchange=async()=>{let u=state.users[+el.dataset.role],roleMap={procurement_manager:'admin',procurement_supervisor:'supervisor',procurement_specialist:'specialist'};const {error}=await sb.from('profiles').update({role:roleMap[el.value]}).eq('id',u.id);if(error){toast('تعذر تعديل الدور: '+error.message);renderSettings();return;}u.role=el.value;audit('تعديل صلاحية',u.name+' → '+el.value);}});document.querySelectorAll('[data-toggle]').forEach(el=>{el.disabled=currentProfile?.role!=='admin';el.onclick=async()=>{let u=state.users[+el.dataset.toggle],next=!u.active;const {error}=await sb.from('profiles').update({is_active:next}).eq('id',u.id);if(error){toast('تعذر تغيير حالة المستخدم: '+error.message);return;}u.active=next;audit('تغيير حالة مستخدم',u.name);renderSettings();};});if(currentProfile?.role!=='admin'){const add=$('addUser');if(add)add.disabled=true;}$('aliasRows').innerHTML=state.aliases.map(x=>`<div>${esc(x.from)} ← ${esc(x.to)}</div>`).join('')||'لا توجد أسماء بديلة مضافة.';$('auditRows').innerHTML=state.audit.map(x=>`<div style="padding:7px;border-bottom:1px solid #eee">${esc(x.time)} · ${esc(x.action)} · ${esc(x.detail)}</div>`).join('')||'لا توجد تعديلات مسجلة.';renderCustomModules()}
 function fmt(n){return new Intl.NumberFormat('en-US',{maximumFractionDigits:2}).format(n||0)}
 function pct(n){return n===null||!Number.isFinite(n)?'—':(n*100).toFixed(1)+'%'}
-function getPRItemFulfillment(month=state.month){
- const requested=new Map();
- for(const x of state.pr.filter(x=>x.month===month&&norm(x.code)&&x.qty>0)){
-  const code=norm(x.code),g=requested.get(code)||{code:x.code,item:x.item||'',requestedQty:0};
-  g.requestedQty+=x.qty;if(!g.item&&x.item)g.item=x.item;requested.set(code,g);
- }
- const received=new Map();
- for(const x of state.receipts.filter(x=>x.month===month&&norm(x.code))){
-  const code=norm(x.code);received.set(code,(received.get(code)||0)+x.qty);
- }
- return [...requested.values()].map(x=>{
-  const receivedQty=received.get(norm(x.code))||0;
-  const status=receivedQty>=x.requestedQty?'كامل':receivedQty>0?'جزئي':'غير مورد';
-  return {...x,receivedQty,status,fulfillment:x.requestedQty?receivedQty/x.requestedQty:0};
- });
-}
 function draw(){
  aggregate();let sum=(a,k)=>a.reduce((v,x)=>v+(x[k]||0),0);
  const prMonth=state.pr.filter(x=>x.month===state.month),prMap=new Map();for(const x of prMonth){let k=norm(x.code),g=prMap.get(k)||{qty:0,value:0};g.qty+=x.qty;g.value+=x.value;prMap.set(k,g)}
  const prValue=sum(prMonth,'value'),prQty=sum(prMonth,'qty');let achievedValue=0,achievedQty=0,unmatchedReceiptValue=0,unmatchedReceiptQty=0;
  for(const r of state.receipts.filter(x=>x.month===state.month)){if(prMap.has(norm(r.code))){achievedValue+=r.value;achievedQty+=r.qty}else{unmatchedReceiptValue+=r.value;unmatchedReceiptQty+=r.qty}}
  $('prValue').textContent=fmt(prValue);$('prAchievedValue').textContent=fmt(achievedValue);$('valueRate').textContent=prValue?pct(achievedValue/prValue):'—';$('prRate').textContent=prQty?pct(achievedQty/prQty):'—';
- const itemFulfillment=getPRItemFulfillment(),itemTotal=itemFulfillment.length;
- const itemCounts={full:itemFulfillment.filter(x=>x.status==='كامل').length,partial:itemFulfillment.filter(x=>x.status==='جزئي').length,zero:itemFulfillment.filter(x=>x.status==='غير مورد').length};
- $('prItemsFull').textContent=fmt(itemCounts.full);$('prItemsFullRate').textContent=pct(itemTotal?itemCounts.full/itemTotal:null);
- $('prItemsPartial').textContent=fmt(itemCounts.partial);$('prItemsPartialRate').textContent=pct(itemTotal?itemCounts.partial/itemTotal:null);
- $('prItemsZero').textContent=fmt(itemCounts.zero);$('prItemsZeroRate').textContent=pct(itemTotal?itemCounts.zero/itemTotal:null);
  const p=state.summary.filter(x=>x.ordered>0),pov=sum(p,'poValue');$('poValue').textContent=fmt(pov);$('unmatchedReceiptValue').textContent=fmt(unmatchedReceiptValue);
  const groups={};
  for(const x of state.prVendor.filter(x=>x.month===state.month)){let key=canonSupplier(x.supplier),g=groups[key]||{supplier:x.supplier,ordered:0,received:0,prValue:0,receiptValue:0,codes:new Set()};g.ordered+=x.qty;g.prValue+=x.value;g.codes.add(norm(x.code));groups[key]=g}
@@ -380,7 +367,7 @@ function draw(){
  $('supplierDetailRows').innerHTML=gs.map(g=>`<tr><td>${esc(g.supplier)}</td><td class="num">${fmt(g.prValue)}</td><td class="num">${fmt(g.receiptValue)}</td><td class="num">${fmt(g.prValue-g.receiptValue)}</td><td>${pct(g.prValue?g.receiptValue/g.prValue:null)}</td><td>${pct(achievedValue?g.receiptValue/achievedValue:null)}</td><td>${g.codes.size}</td></tr>`).join('')||'<tr><td colspan="7" class="empty">لا توجد بيانات تخصيص موردين لتقييمها.</td></tr>';
  renderComparison();const ctx=$('valueChart');if(valueChart)valueChart.destroy();valueChart=new Chart(ctx,{type:'bar',data:{labels:['إجمالي قيمة PR','المحقق بالاستلامات'],datasets:[{data:[prValue,achievedValue],backgroundColor:['#7f9bc8','#15966a'],borderRadius:8}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true}}}});
  const counts=[state.summary.filter(x=>x.status==='full').length,state.summary.filter(x=>x.status==='partial').length,state.summary.filter(x=>x.status==='zero').length,state.summary.filter(x=>x.status==='over').length,state.summary.filter(x=>x.status==='unmatched').length];if(statusChart)statusChart.destroy();statusChart=new Chart($('statusChart'),{type:'doughnut',data:{labels:['مكتمل','جزئي','بدون توريد','زيادة','بدون طلب'],datasets:[{data:counts,backgroundColor:['#15966a','#e0a33b','#d94d58','#6687c5','#9aa7b7']}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom'}}}});
- renderPR();renderPurchaseOrders();renderReceipts();renderSupplierPO();renderSettings();$('archiveContent').innerHTML=state.history.length?`<div class="tablewrap"><table><thead><tr><th>الملف</th><th>النوع</th><th>عدد السجلات</th><th>وقت الاستيراد</th></tr></thead><tbody>${state.history.map(h=>`<tr><td>${esc(h.name)}</td><td>${h.type}</td><td>${h.count}</td><td>${h.time}</td></tr>`).join('')}</tbody></table></div>`:'لم يتم استيراد ملفات حتى الآن.';
+ renderPR();renderPurchaseOrders();renderReceipts();renderSupplierPO();renderSettings();if($('awarding'))awardRender();$('archiveContent').innerHTML=state.history.length?`<div class="tablewrap"><table><thead><tr><th>الملف</th><th>النوع</th><th>عدد السجلات</th><th>وقت الاستيراد</th></tr></thead><tbody>${state.history.map(h=>`<tr><td>${esc(h.name)}</td><td>${h.type}</td><td>${h.count}</td><td>${h.time}</td></tr>`).join('')}</tbody></table></div>`:'لم يتم استيراد ملفات حتى الآن.';
 }
 function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 function renderComparison(){let q=norm($('searchItem').value),f=$('matchFilter').value,poGrouped=poGroupedRows();let a=state.summary.filter(x=>(!q||norm(x.supplier+' '+x.code+' '+x.item).includes(q))&&(f==='all'||x.status===f));$('comparisonRows').innerHTML=a.map((x,i)=>`<tr><td>${esc(x.supplier)}</td><td class="num">${esc(x.code)}</td><td>${esc(x.item)}</td><td class="num">${fmt(x.ordered)}</td><td class="num">${fmt(x.received)}</td><td class="num">${fmt(Math.max(0,x.remaining))}</td><td class="num">${fmt((poGrouped.find(z=>z.month===x.month&&canonSupplier(z.supplier)===canonSupplier(x.supplier)&&norm(z.code)===norm(x.code))||{}).unitPrice||0)}</td><td class="num">${fmt(x.received?x.receiptValue/x.received:0)}</td><td>${esc((poGrouped.find(z=>z.month===x.month&&canonSupplier(z.supplier)===canonSupplier(x.supplier)&&norm(z.code)===norm(x.code))||{}).taxFlag||'غير محدد في الملف')}</td><td>${pct(x.rate)}</td><td>${x.status==='full'?'<span class="status">مكتمل</span>':x.status==='partial'?'<span class="status warn">جزئي</span>':x.status==='zero'?'<span class="status bad">بدون توريد</span>':x.status==='over'?'<span class="status warn">زيادة</span>':'<span class="status bad">استلام بدون طلب</span>'}</td><td><button class="btn soft" data-editrow="${esc(x.supplier)}|${esc(x.code)}|${x.month}">تعديل</button></td></tr>`).join('')||'<tr><td colspan="12" class="empty">لا توجد نتائج.</td></tr>';document.querySelectorAll('[data-editrow]').forEach(btn=>btn.onclick=()=>{let [supplier,code,month]=btn.dataset.editrow.split('|');let x=state.summary.find(z=>z.supplier===supplier&&z.code===code&&z.month===month);if(!x)return;let nq=prompt('الكمية المطلوبة الجديدة',x.ordered);if(nq===null)return;let nr=prompt('الكمية المستلمة الجديدة',x.received);if(nr===null)return;nq=num(nq);nr=num(nr);let pl=state.po.filter(z=>z.month===month&&canonSupplier(z.supplier)===canonSupplier(supplier)&&norm(z.code)===norm(code));let rl=state.receipts.filter(z=>z.month===month&&canonSupplier(z.supplier)===canonSupplier(supplier)&&norm(z.code)===norm(code));if(pl.length){let delta=nq-pl.reduce((a,z)=>a+z.qty,0);pl[0].qty+=delta;pl[0].value=pl[0].qty*pl[0].unitPrice}if(rl.length){let delta=nr-rl.reduce((a,z)=>a+z.qty,0);rl[0].qty+=delta}audit('تعديل بيانات مقارنة',supplier+' / '+code+' | ordered '+nq+' | received '+nr);draw()})}
@@ -389,13 +376,148 @@ $('prFile').addEventListener('change',e=>{prFile=e.target.files[0];$('prFileStat
 $('poFile').addEventListener('change',e=>{poFiles=[...e.target.files];$('poFileStatus').textContent=poFiles.length?poFiles.map(f=>f.name).join(' | ')+` (${poFiles.length} ملفات)`:''});
 $('receiptFile').addEventListener('change',e=>{receiptFile=e.target.files[0];$('receiptFileStatus').textContent=receiptFile?.name||''});
 $('runImport').onclick=async()=>{if(!poFiles.length||!receiptFile||!prFile){toast('ارفع ملف PR وملف استلامات وملف PO واحداً على الأقل');return}try{let prData=await readPR(prFile);let poParts=await Promise.all(poFiles.map(f=>readSheet(f,'po')));let po=poParts.flat();let rec=await readSheet(receiptFile,'receipt');state.pr=prData.pr;state.prVendor=prData.prVendor;if(!po.length||!rec.length)throw Error('لم يتم استخراج سجلات صالحة من أحد الملفات');let months=[...new Set([prData.month,...po,...rec].map(x=>x.month).filter(Boolean))];if(months.length>1)toast('تنبيه: الملفات تحتوي على أكثر من شهر؛ اختر الشهر المطلوب من القائمة');state.month=prData.month||months.sort().at(-1)||'2026-10';state.po=po;state.receipts=rec;$('monthFilter').innerHTML=months.map(m=>`<option value="${m}">${m}</option>`).join('');$('monthFilter').value=state.month;state.history=[{name:prFile.name,type:'PR شهري',count:state.pr.length,time:new Date().toLocaleString('ar-EG')},...poFiles.map((f,i)=>({name:f.name,type:'أوامر شراء PO',count:poParts[i].length,time:new Date().toLocaleString('ar-EG')})),{name:receiptFile.name,type:'استلامات فعلية',count:rec.length,time:new Date().toLocaleString('ar-EG')}];$('importSummary').classList.remove('hidden');const poSup=[...new Set(po.map(x=>norm(x.supplier)))],recSup=[...new Set(rec.map(x=>norm(x.supplier)))],overlap=poSup.filter(x=>recSup.includes(x)).length;$('importSummary').innerHTML=`<b>تم تحليل الملفات بنجاح.</b><p>طلب المخزن PR: ${state.pr.length.toLocaleString('en-US')} صنف · ملفات أوامر الشراء: ${poFiles.length} · بنود PO: ${po.length.toLocaleString('en-US')} · الاستلامات: ${rec.length.toLocaleString('en-US')} · الشهر المحدد: ${state.month}</p><p>الموردون في أوامر الشراء: ${poSup.length} · الموردون في الاستلامات: ${recSup.length} · الموردون المشتركون بالاسم: ${overlap}</p><p class="muted">المطابقة على المورد + كود الصنف + الشهر. يمكن تحديد أكثر من ملف PO في نفس عملية الاستيراد. إذا كانت ملفات PO لنفس المورد والصنف والشهر، تجمع الكميات والقيم للمقارنة. الضريبة لا يتم افتراضها: إذا لم يتضمن ملف PO عمود ضريبة واضحاً فستظهر «غير محدد في الملف».</p>`;await uploadSourceFiles([prFile,...poFiles,receiptFile],'PR_PO_GR',state.month);await persistWorkspace();draw();toast('تم تحليل الملفات ورفعها وحفظ البيانات مركزيًا')}catch(e){toast('تعذر التحليل/الحفظ: '+e.message)}};
-$('monthFilter').onchange=e=>{state.month=e.target.value;draw()};$('refresh').onclick=draw;$('searchItem').oninput=renderComparison;$('matchFilter').onchange=renderComparison;$('prSearch').oninput=renderPR;$('poSearch').oninput=renderPurchaseOrders;$('exportWarehouse').onclick=exportWarehouse;$('exportWarehouseDashboard').onclick=exportWarehouse;
+$('monthFilter').onchange=e=>{state.month=e.target.value;draw()};$('refresh').onclick=draw;$('searchItem').oninput=renderComparison;$('matchFilter').onchange=renderComparison;
 $('clearData').onclick=()=>{state.pr=[];state.prVendor=[];state.po=[];state.receipts=[];state.summary=[];state.history=[];$('importSummary').classList.add('hidden');draw();persistWorkspace().then(()=>toast('تم مسح بيانات مساحة العمل المركزية')).catch(e=>toast('فشل الحفظ: '+e.message))};
 $('addUser').onclick=()=>toast('إنشاء حساب الدخول يتم من Supabase Authentication؛ لا يمكن إنشاء حساب Auth من واجهة المتصفح دون إجراء إداري آمن.');
 $('addAlias').onclick=()=>{let from=$('aliasFrom').value.trim(),to=$('aliasTo').value.trim();if(!from||!to){toast('أدخل الاسمين');return}state.aliases.push({from,to});audit('إضافة توحيد مورد',from+' → '+to);$('aliasFrom').value='';$('aliasTo').value='';renderSettings()};
 $('createModule').onclick=()=>{let name=$('moduleName').value.trim(),description=$('moduleDesc').value.trim(),fields=$('moduleFields').value.split(',').map(x=>x.trim()).filter(Boolean);if(!name||!fields.length){toast('اكتب اسم الموديول وعموداً واحداً على الأقل');return}if(state.customModules.some(x=>norm(x.name)===norm(name))){toast('يوجد موديول بنفس الاسم');return}state.customModules.push({name,description,fields,rows:[]});$('moduleName').value='';$('moduleDesc').value='';$('moduleFields').value='';audit('إنشاء موديول',name);renderCustomModules();toast('تم إنشاء الموديول')};
 $('exportPR').onclick=exportPR;$('exportPRAlloc').onclick=()=>exportWorkbook('PR_Supplier_Allocation_'+state.month,[{name:'Supplier Allocation',rows:state.prVendor.filter(x=>x.month===state.month).map(x=>({'Month':x.month,'Supplier':x.supplier,'Item Code':x.code,'Item Name':x.item,'Qty':x.qty,'Unit Cost':x.unitCost,'Value':x.value}))}]);
 $('exportPO').onclick=exportPO;$('exportReorder').onclick=()=>exportWorkbook('Items_To_Reorder_'+state.month,[{name:'Items To Reorder',rows:poGroupedRows().map(x=>{let got=state.receipts.filter(r=>r.month===x.month&&canonSupplier(r.supplier)===canonSupplier(x.supplier)&&norm(r.code)===norm(x.code)).reduce((s,r)=>s+r.qty,0);return {...x,got,remaining:Math.max(0,x.qty-got)}}).filter(x=>x.remaining>0).map(x=>({'Month':x.month,'Supplier':x.supplier,'Item Code':x.code,'Item Name':x.item,'PO Qty':x.qty,'Received Qty':x.got,'Suggested Reorder Qty':x.remaining,'PO Unit Price':x.unitPrice,'Tax':x.taxFlag||'غير محدد'}))}]);$('exportReceipts').onclick=exportReceipts;$('exportComparison').onclick=exportComparison;$('exportSuppliers').onclick=exportSuppliers;$('exportSupplierPO').onclick=exportSupplierPO;$('exportDashboard').onclick=exportDashboard;
+
+// Procurement Awarding module: current offers are separated from historical reference data.
+function awardReadFile(file){
+ return new Promise((resolve,reject)=>{const fr=new FileReader();fr.onload=e=>{try{const wb=XLSX.read(e.target.result,{type:'array',cellDates:true});resolve({wb,ws:wb.Sheets[wb.SheetNames[0]],name:file.name})}catch(err){reject(err)}};fr.onerror=reject;fr.readAsArrayBuffer(file)});
+}
+function awardCode(v){return String(v??'').trim().replace(/\.0$/,'').replace(/\s+/g,'').toUpperCase()}
+function awardPct(v){const n=num(v);return n>1?n/100:n}
+function awardSupplierKey(v){let s=norm(v).replace(/[أإآ]/g,'ا').replace(/ة/g,'ه').replace(/[\s_-]/g,'');const map={'الشمس':'الشمس','شمس':'الشمس','الزهراء':'الزهراء','زهراء':'الزهراء','اتشاس':'اتش اس','hs':'اتش اس','كريم':'كريم','الشفا':'الشفا','الشفاء':'الشفا','اخناتون':'اخناتون','akhnaton':'اخناتون'};return map[s]||String(v||'').trim()}
+function awardReadPRFile(file){
+ return awardReadFile(file).then(({wb,ws,name})=>{
+  const sheet=wb.Sheets['Sheet1']||ws,rows=XLSX.utils.sheet_to_json(sheet,{defval:'',raw:true});
+  const out=rows.map((r,i)=>({month:state.award.month||state.month,code:awardCode(getCell(r,['Item Code'])),item:String(getCell(r,['Item Name'])).trim(),qty:num(getCell(r,['order'])),unitCost:num(getCell(r,['unit cost'])),value:num(getCell(r,['total cost'])),sourceRow:i+2})).filter(x=>x.code&&x.qty>0);
+  if(!out.length)throw Error('لم أجد أصنافًا في ملف الطلبية. تأكد من أعمدة Item Code وorder وunit cost.');
+  return {rows:out,name};
+ });
+}
+function awardReadOffersFile(file){
+ return awardReadFile(file).then(({ws,name})=>{
+  const rows=XLSX.utils.sheet_to_json(ws,{defval:'',raw:true});
+  const vendors=[['الشمس','خصم الشمس','سعر صيدلى الشمس'],['الزهراء','خصم الزهراء','سعر صيدلى الزهراء'],['اتش اس','خصم اتش اس','سعر صيدلى اتش اس'],['كريم','خصم كريم','سعر صيدلى كريم'],['الشفا','خصم الشفا','سعر صيدلى الشفا']];
+  const out=[];
+  rows.forEach((r,i)=>{
+   const code=awardCode(getCell(r,['Item Code']));if(!code)return;
+   vendors.forEach(([vendor,dk,pk])=>{
+    const rawDiscount=getCell(r,[dk]),price=num(getCell(r,[pk])),discount=awardPct(rawDiscount);
+    if(discount>0)out.push({code,item:String(getCell(r,['Item Name'])).trim(),vendor,discount,unitPrice:price,hasPrice:price>0,vat:num(getCell(r,['VAT'])),sourceRow:i+2,sourceFile:name});
+   });
+  });
+  if(!out.length)throw Error('لم أجد عروضًا فعلية. راجع أعمدة خصومات وأسعار الموردين الخمسة.');
+  return {rows:out,name};
+ });
+}
+function awardReadHistoryFile(file){
+ return awardReadFile(file).then(({ws,name})=>{
+  const rows=XLSX.utils.sheet_to_json(ws,{defval:'',raw:true});
+  const out=rows.map((r,i)=>{
+   const code=awardCode(getCell(r,['كود الصنف']));if(!code)return null;
+   const bestVendor=awardSupplierKey(getCell(r,['أفضل موزع'])),bestDiscount=awardPct(getCell(r,['خصمه']));
+   const all=String(getCell(r,['كل الموردين وخصومهم'])||'');
+   const discounts={};
+   all.split(/[،,;|]/).forEach(part=>{const m=part.match(/^\s*(.*?)\s*=\s*(\d+(?:\.\d+)?)\s*%?\s*$/);if(m)discounts[awardSupplierKey(m[1])]=awardPct(m[2])});
+   if(bestVendor&&bestDiscount&&!discounts[bestVendor])discounts[bestVendor]=bestDiscount;
+   return {code,item:String(getCell(r,['الصنف'])).trim(),bestVendor,bestDiscount,discounts,mostSupplied:awardSupplierKey(getCell(r,['أكتر موزع توريدًا'])),sourceRow:i+2};
+  }).filter(Boolean);
+  return {rows:out,name};
+ });
+}
+function awardBuildData(){
+ const pr=state.award.pr||[],offers=state.award.offers||[],hist=state.award.history||[];
+ const pmap=new Map();
+ pr.forEach(x=>{const k=awardCode(x.code);if(!k)return;const g=pmap.get(k)||{code:k,item:x.item||'',qty:0,value:0,unitCost:0};g.qty+=num(x.qty);g.value+=num(x.value)||num(x.qty)*num(x.unitCost);if(!g.item)g.item=x.item;pmap.set(k,g)});
+ pmap.forEach(g=>g.unitCost=g.qty?g.value/g.qty:0);
+ const omap=new Map();
+ offers.forEach(o=>{const k=awardCode(o.code);if(!k||num(o.discount)<=0)return;let list=omap.get(k)||[];const old=list.find(x=>awardSupplierKey(x.vendor)===awardSupplierKey(o.vendor));if(!old)list.push({...o});else if((o.unitPrice>0&&old.unitPrice<=0)||(o.unitPrice>0&&o.unitPrice<old.unitPrice))Object.assign(old,o);omap.set(k,list)});
+ omap.forEach(list=>list.sort((a,b)=>(a.unitPrice>0?0:1)-(b.unitPrice>0?0:1)||a.unitPrice-b.unitPrice||b.discount-a.discount));
+ const hmap=new Map();hist.forEach(h=>{const k=awardCode(h.code);if(k&&!hmap.has(k))hmap.set(k,h)});
+ const items=[...pmap.values()].map(p=>{const os=omap.get(p.code)||[],h=hmap.get(p.code)||null;return {...p,offers:os,history:h}});
+ const offered=items.filter(x=>x.offers.length);
+ const total=offered.reduce((s,x)=>s+x.value,0);let cumulative=0;
+ offered.sort((a,b)=>b.value-a.value);
+ offered.forEach((x,i)=>{const share=total?x.value/total:0;const before=cumulative;cumulative+=share;x.share=share;x.cumulative=cumulative;x.pareto=before<.8?'A':'B';});
+ items.forEach(x=>{if(!x.offers.length){x.share=0;x.cumulative=0;x.pareto='—'}});
+ return {items,offered,total,pareto:offered.filter(x=>x.pareto==='A')};
+}
+function awardRefForSupplier(item,vendor){
+ const h=item.history;if(!h)return null;
+ const k=awardSupplierKey(vendor),d=h.discounts?.[k];
+ if(d>0)return {vendor:k,discount:d,match:'نفس المورد'};
+ if(h.bestDiscount>0)return {vendor:h.bestVendor||'أفضل مورد تاريخي',discount:h.bestDiscount,match:'أفضل مرجع تاريخي'};
+ return null;
+}
+function awardAllocKey(code,vendor){return awardCode(code)+'|'+awardSupplierKey(vendor)}
+function awardRender(){
+ const data=awardBuildData(),{items,offered,total,pareto}=data;
+ $('awKpiPR').textContent=fmt(items.length);$('awKpiOffers').textContent=fmt(offered.length);$('awKpiPareto').textContent=fmt(pareto.length);$('awKpiValue').textContent=fmt(total);
+ const pctA=total?pareto.reduce((s,x)=>s+x.value,0)/total:0;
+ $('awardParetoSummary').textContent=offered.length?`تم تطبيق Pareto على ${fmt(offered.length)} صنفًا لها عروض فعلية فقط. مجموعة A تضم ${fmt(pareto.length)} صنفًا وتمثل ${pct(pctA)} من قيمة مجموعة العروض. الخصم المرجعي لا يدخل في قيمة العرض أو الوفر.`:'لا توجد أصناف لها عروض حالية مرتبطة بالطلبية.';
+ $('awardParetoRows').innerHTML=offered.map(x=>`<tr><td>${esc(x.code)}</td><td>${esc(x.item)}</td><td class="num">${fmt(x.value)}</td><td>${pct(x.share)}</td><td>${pct(x.cumulative)}</td><td><span class="award-${x.pareto==='A'?'a':'b'}">${x.pareto==='A'?'A · أولوية':'B · عادي'}</span></td></tr>`).join('')||'<tr><td colspan="6" class="empty">لا توجد بيانات.</td></tr>';
+ const q=norm($('awardSearch')?.value||''),f=$('awardFilter')?.value||'all';
+ const filtered=items.filter(x=>(!q||norm(x.code+' '+x.item+' '+x.offers.map(o=>o.vendor).join(' ')).includes(q))&&(f==='all'||(f==='pareto'&&x.pareto==='A')||(f==='nooffer'&&!x.offers.length)||(f==='offer'&&x.offers.length)));
+ let html='';
+ filtered.forEach(x=>{
+  if(!x.offers.length){
+   const ref=x.history?.bestDiscount>0?`${esc(x.history.bestVendor||'أفضل مورد تاريخي')} · ${pct(x.history.bestDiscount)}`:'لا توجد مرجعية تاريخية';
+   html+=`<tr><td><span class="award-c">بدون عرض</span></td><td>${esc(x.code)}</td><td>${esc(x.item)}</td><td class="num">${fmt(x.qty)}</td><td class="num">${fmt(x.unitCost)}</td><td>—</td><td>—</td><td>—</td><td>—</td><td>${ref}</td><td>مرجعي فقط</td><td>—</td><td>—</td></tr>`;
+   return;
+  }
+  x.offers.forEach((o,i)=>{
+   const ref=awardRefForSupplier(x,o.vendor),refTxt=ref?`${esc(ref.vendor)} · ${pct(ref.discount)}`:'لا توجد مرجعية';
+   const delta=ref?o.discount-ref.discount:null,akey=awardAllocKey(x.code,o.vendor);
+   const defaultIndex=x.offers.findIndex(z=>z.unitPrice>0);const alloc=state.award.allocations[akey]!==undefined?num(state.award.allocations[akey]):(i===defaultIndex&&defaultIndex>=0?x.qty:0);
+   html+=`<tr><td><span class="award-${x.pareto==='A'?'a':'b'}">${x.pareto==='A'?'A':'B'}</span></td><td>${esc(x.code)}</td><td>${esc(x.item)}</td><td class="num">${fmt(x.qty)}</td><td class="num">${fmt(x.unitCost)}</td><td>${esc(o.vendor)}</td><td>${o.unitPrice>0?(i+1)+(i<3?' · مقترح':''):'غير قابل للترتيب'}</td><td>${pct(o.discount)}</td><td class="num">${o.unitPrice>0?fmt(o.unitPrice):'السعر غير متوفر'}</td><td>${refTxt}</td><td>${delta===null?'—':(delta>=0?'+':'')+pct(delta)}</td><td><input class="award-qty" type="number" min="0" step="1" data-aw-code="${esc(x.code)}" data-aw-vendor="${esc(o.vendor)}" value="${alloc}" ${o.unitPrice>0?"":"disabled"}></td><td class="num">${fmt(alloc*o.unitPrice)}</td></tr>`;
+  });
+ });
+ $('awardRows').innerHTML=html||'<tr><td colspan="13" class="empty">لا توجد أصناف مطابقة.</td></tr>';
+ const sums={};items.forEach(x=>x.offers.forEach(o=>{const defaultIndex=x.offers.findIndex(z=>z.unitPrice>0);const qty=num(state.award.allocations[awardAllocKey(x.code,o.vendor)]??(x.offers.indexOf(o)===defaultIndex&&defaultIndex>=0?x.qty:0));if(!qty)return;const s=sums[o.vendor]||{supplier:o.vendor,items:0,qty:0,value:0,saving:0};s.items++;s.qty+=qty;s.value+=qty*o.unitPrice;s.saving+=(x.unitCost-o.unitPrice)*qty;sums[o.vendor]=s}));
+ $('awardSupplierSummary').innerHTML=Object.values(sums).sort((a,b)=>b.value-a.value).map(s=>`<tr><td>${esc(s.supplier)}</td><td>${fmt(s.items)}</td><td>${fmt(s.qty)}</td><td>${fmt(s.value)}</td><td>${fmt(s.saving)}</td></tr>`).join('')||'<tr><td colspan="5" class="empty">لم يتم توزيع أي كميات.</td></tr>';
+}
+function awardValidateAlloc(input){
+ const code=input.dataset.awCode,vendor=input.dataset.awVendor,qty=num(input.value);
+ const item=awardBuildData().items.find(x=>x.code===awardCode(code));if(!item)return;const currentOffer=item.offers.find(o=>awardSupplierKey(o.vendor)===awardSupplierKey(vendor));if(!currentOffer||currentOffer.unitPrice<=0){toast('لا يمكن ترسية كمية على مورد لم يرد سعر وحدة في العرض.');input.value=0;return;}
+ let sum=0;item.offers.forEach(o=>{const key=awardAllocKey(code,o.vendor);const defaultIndex=item.offers.findIndex(z=>z.unitPrice>0);sum+=key===awardAllocKey(code,vendor)?qty:num(state.award.allocations[key]??(item.offers.indexOf(o)===defaultIndex&&defaultIndex>=0?item.qty:0))});
+ if(qty<0||sum>item.qty){toast(`إجمالي ترسية ${item.item} لا يجوز أن يتجاوز ${fmt(item.qty)} وحدة.`);input.value=state.award.allocations[awardAllocKey(code,vendor)]??(item.offers.indexOf(item.offers.find(o=>awardSupplierKey(o.vendor)===awardSupplierKey(vendor)))===0?item.qty:0);return}
+ state.award.allocations[awardAllocKey(code,vendor)]=qty;
+ const row=input.closest('tr');if(row&&row.children[12])row.children[12].textContent=fmt(qty*(item.offers.find(o=>awardSupplierKey(o.vendor)===awardSupplierKey(vendor))?.unitPrice||0));
+ awardRender();
+}
+function awardExportReport(){
+ const data=awardBuildData(),rows=[];
+ data.items.forEach(x=>{
+  if(!x.offers.length){rows.push({'Item Code':x.code,'Item Name':x.item,'Requested Qty':x.qty,'PR Unit Cost':x.unitCost,'Current Offer':'No current offer','Historical Best Supplier':x.history?.bestVendor||'','Historical Discount':x.history?.bestDiscount||'','Award Qty':0});return}
+  x.offers.forEach((o,i)=>{const defaultIndex=x.offers.findIndex(z=>z.unitPrice>0);const qty=num(state.award.allocations[awardAllocKey(x.code,o.vendor)]??(i===defaultIndex&&defaultIndex>=0?x.qty:0)),ref=awardRefForSupplier(x,o.vendor);rows.push({'Item Code':x.code,'Item Name':x.item,'Requested Qty':x.qty,'PR Unit Cost':x.unitCost,'Pareto Group':x.pareto,'Supplier':o.vendor,'Rank':i+1,'Current Discount':o.discount,'Current Unit Price':o.unitPrice,'VAT In Source':o.vat||'Not specified','Historical Reference Supplier':ref?.vendor||'','Historical Reference Discount':ref?.discount||'','Historical Match':ref?.match||'','Award Qty':qty,'Award Value':qty*o.unitPrice,'Estimated Saving vs PR Unit Cost':qty*(x.unitCost-o.unitPrice)})});
+ });
+ exportWorkbook('Awarding_Analysis_'+state.award.month,[{name:'Award Analysis',rows},{name:'Pareto 80-20',rows:data.offered.map(x=>({'Item Code':x.code,'Item Name':x.item,'PR Value':x.value,'Share':x.share,'Cumulative':x.cumulative,'Group':x.pareto}))}]);
+}
+function awardExportPO(){
+ const data=awardBuildData(),by={};
+ data.items.forEach(x=>x.offers.forEach((o,i)=>{const defaultIndex=x.offers.findIndex(z=>z.unitPrice>0);const qty=num(state.award.allocations[awardAllocKey(x.code,o.vendor)]??(i===defaultIndex&&defaultIndex>=0?x.qty:0));if(qty<=0||o.unitPrice<=0)return;const a=by[o.vendor]||[];a.push({'Item Code':x.code,'Item Name':x.item,'UOM':'','Award Qty':qty,'Unit Price':o.unitPrice,'Discount':o.discount,'Line Value':qty*o.unitPrice});by[o.vendor]=a}));
+ const sheets=Object.entries(by).map(([vendor,rows])=>({name:vendor,rows}));
+ if(!sheets.length){toast('لا توجد كميات مرسّاة لتصدير أوامر الموردين.');return}
+ exportWorkbook('Supplier_POs_'+state.award.month,sheets);
+}
+function awardBindEvents(){
+ $('awardPRFile').onchange=async e=>{const f=e.target.files[0];if(!f)return;try{const r=await awardReadPRFile(f);state.award.pr=r.rows;state.award.month=$('awardMonthInput').value||state.month;state.award.pr.forEach(x=>x.month=state.award.month);$('awardStatus').textContent=`تم تحميل الطلبية: ${f.name} · ${fmt(r.rows.length)} سجل`;state.award.allocations={};awardRender();}catch(err){toast('خطأ في قراءة الطلبية: '+err.message)}};
+ $('awardOffersFile').onchange=async e=>{const f=e.target.files[0];if(!f)return;try{const r=await awardReadOffersFile(f);state.award.offers=r.rows;$('awardStatus').textContent=`تم تحميل العروض: ${f.name} · ${fmt(r.rows.length)} عرض فعلي`;awardRender();}catch(err){toast('خطأ في قراءة العروض: '+err.message)}};
+ $('awardHistoryFile').onchange=async e=>{const f=e.target.files[0];if(!f)return;try{const r=await awardReadHistoryFile(f);state.award.history=r.rows;$('awardStatus').textContent=`تم تحميل المرجعية التاريخية: ${f.name} · ${fmt(r.rows.length)} سجل تاريخي`;awardRender();}catch(err){toast('خطأ في قراءة المرجعية: '+err.message)}};
+ $('awardMonthInput').onchange=()=>{state.award.month=$('awardMonthInput').value||state.month;awardRender()};
+ $('awardUseSystemPR').onclick=()=>{const a=state.pr.filter(x=>x.month===state.month);if(!a.length){toast('لا توجد بيانات PR محملة في النظام لهذا الشهر.');return}state.award.pr=a.map(x=>({...x,code:awardCode(x.code)}));state.award.month=state.month;$('awardMonthInput').value=state.month;$('awardStatus').textContent=`تم استخدام PR المحمل بالنظام · ${fmt(a.length)} سجل`;state.award.allocations={};awardRender()};
+ $('awardRecalc').onclick=awardRender;$('awardSearch').oninput=awardRender;$('awardFilter').onchange=awardRender;
+ $('awardRows').addEventListener('change',e=>{if(e.target.matches('.award-qty'))awardValidateAlloc(e.target)});
+ $('awardExportReport').onclick=awardExportReport;$('awardExportPO').onclick=awardExportPO;
+ $('awardSave').onclick=()=>{state.award.approved=true;audit('حفظ توزيع الترسية',state.award.month);scheduleWorkspaceSave();toast('تم حفظ توزيع الترسية في مساحة العمل المشتركة.')};
+}
+awardBindEvents();
+
 document.querySelectorAll('.nav button').forEach(b=>b.onclick=()=>{document.querySelectorAll('.nav button').forEach(x=>x.classList.remove('active'));b.classList.add('active');document.querySelectorAll('.page').forEach(x=>x.classList.remove('active'));$(b.dataset.page).classList.add('active');$('pageTitle').textContent=b.textContent.replace(/^[^\s]+\s/,'')});
 draw();
 </script>
