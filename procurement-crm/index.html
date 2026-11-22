@@ -18,7 +18,7 @@
 .award-kpi small{display:block;color:var(--muted);font-size:11px}.award-kpi b{display:block;font-size:23px;margin-top:8px}
 #awarding .toolbar label{display:flex;align-items:center;gap:6px;font-size:12px;flex-wrap:wrap}
 #awarding input[type=file]{max-width:210px;font-size:11px}
-#awarding .tablewrap{overflow:auto}#awarding table{min-width:1250px}
+#awarding .tablewrap{overflow:auto}#awarding table{min-width:1900px}
 .award-a{background:#e7f7ef;color:#087443;padding:4px 8px;border-radius:20px;font-size:11px}
 .award-b{background:#fff4dd;color:#9b6500;padding:4px 8px;border-radius:20px;font-size:11px}
 .award-c{background:#eef2f7;color:#536276;padding:4px 8px;border-radius:20px;font-size:11px}
@@ -108,7 +108,7 @@
 <section class="page" id="awarding">
  <div class="panel">
   <div class="panelhead"><h3>ترسية المشتريات — Procurement Awarding</h3><span class="pill">Item-level · Split Allocation</span></div>
-  <div class="note">الطلبية الشهرية تحدد الكميات والتكلفة المرجعية. عروض الموردين الحالية تحدد المنافسة. المرجعية التاريخية تستخدم للمقارنة فقط ولا تعتبر عرضًا جديدًا أو خصمًا محققًا. ترتيب الموردين المقترح حسب أقل سعر وحدة معروض، والقرار النهائي لك.</div>
+  <div class="note">الطلبية الشهرية تحدد الكميات والتكلفة المرجعية. عروض الموردين الحالية تحدد المنافسة. المرجعية التاريخية تستخدم للمقارنة فقط ولا تعتبر عرضًا جديدًا أو خصمًا محققًا. ترتيب أفضل 3 موردين حسب أعلى خصم حالي قابل للمقارنة، وعند تساوي الخصم يُقدَّم الأقل سعر وحدة. القرار النهائي لك.</div>
   <div class="toolbar" style="margin:12px 0;gap:10px;flex-wrap:wrap">
    <label>الشهر <input id="awardMonthInput" type="month" value="2026-10"></label>
    <label>ملف الطلبية <input type="file" id="awardPRFile" accept=".xlsx,.xls"></label>
@@ -133,10 +133,10 @@
   <div class="tablewrap"><table><thead><tr><th>كود الصنف</th><th>الصنف</th><th>قيمة الطلبية</th><th>النسبة من مجموعة العروض</th><th>التراكمي</th><th>الأهمية</th></tr></thead><tbody id="awardParetoRows"><tr><td colspan="6" class="empty">لا توجد بيانات بعد.</td></tr></tbody></table></div>
  </div>
  <div class="panel" style="margin-top:14px">
-  <div class="panelhead"><h3>مقارنة العروض وترتيب الموردين</h3><span class="pill">أفضل 3 توصيات لكل صنف</span></div>
+  <div class="panelhead"><h3>مقارنة العروض وترتيب الموردين</h3><span class="pill">أفضل 3 خصومات حالية لكل صنف</span></div>
   <div class="toolbar" style="margin:10px 0"><input id="awardSearch" placeholder="بحث بكود الصنف أو الاسم أو المورد"><select id="awardFilter"><option value="all">كل الأصناف</option><option value="pareto">أصناف 80/20 فقط</option><option value="nooffer">بدون عرض حالي</option><option value="offer">لها عرض حالي</option></select></div>
-  <div class="tablewrap"><table><thead><tr><th>الأهمية</th><th>كود الصنف</th><th>الصنف</th><th>الكمية</th><th>تكلفة PR</th><th>المورد</th><th>ترتيب العرض</th><th>خصم حالي</th><th>سعر الوحدة المعروض</th><th>الخصم المرجعي</th><th>الفرق عن المرجع</th><th>الكمية المرسّاة</th><th>قيمة الترسية</th></tr></thead><tbody id="awardRows"><tr><td colspan="13" class="empty">ارفع ملفات الترسية لبدء المقارنة.</td></tr></tbody></table></div>
-  <div class="note">تظهر العروض الحالية فقط كعروض قابلة للترسية. الخصم التاريخي يظهر للمقارنة ولا يدخل في قيمة الترسية أو الوفر. لا يتم افتراض توفر كمية لدى المورد؛ أدخل الكمية المرسّاة يدويًا. سعر الوحدة هو السعر الوارد بملف العرض، وحقل VAT يُعرض كمرجع فقط عند وجوده ولا تتم إضافة ضريبة غير مثبتة. فرق السعر عن تكلفة PR استرشادي لحين توحيد أساس الضريبة.</div>
+  <div class="tablewrap"><table><thead><tr><th>الأهمية</th><th>كود الصنف</th><th>الصنف</th><th>الكمية المطلوبة</th><th>تكلفة PR</th><th>أفضل مورد تاريخيًا</th><th>الخصم المرجعي</th><th>أفضل عرض حالي #1</th><th>ترسية #1</th><th>ثاني أفضل عرض #2</th><th>ترسية #2</th><th>ثالث أفضل عرض #3</th><th>ترسية #3</th><th>إجمالي المرسّى</th><th>المتبقي</th></tr></thead><tbody id="awardRows"><tr><td colspan="15" class="empty">ارفع ملفات الترسية لبدء المقارنة.</td></tr></tbody></table></div>
+  <div class="note">كل صنف يظهر في صف واحد: المورد الأفضل تاريخيًا وخصمه المرجعي، ثم أفضل 3 عروض حالية مرتبة حسب أقل سعر وحدة. أدخل الكميات في خانات الترسية؛ المتبقي يتحدث بعد كل اختيار، ومجموع الكميات لا يمكن أن يتجاوز المطلوب. سعر الوحدة هو السعر الوارد بملف العرض، وحقل VAT يُعرض كمرجع فقط عند وجوده ولا تتم إضافة ضريبة غير مثبتة. فرق السعر عن تكلفة PR استرشادي لحين توحيد أساس الضريبة.</div>
  </div>
  <div class="panel" style="margin-top:14px">
   <div class="panelhead"><h3>ملخص الترسية حسب المورد</h3><span class="pill">Supplier PO Summary</span></div>
@@ -437,7 +437,7 @@ function awardBuildData(){
  pmap.forEach(g=>g.unitCost=g.qty?g.value/g.qty:0);
  const omap=new Map();
  offers.forEach(o=>{const k=awardCode(o.code);if(!k||num(o.discount)<=0)return;let list=omap.get(k)||[];const old=list.find(x=>awardSupplierKey(x.vendor)===awardSupplierKey(o.vendor));if(!old)list.push({...o});else if((o.unitPrice>0&&old.unitPrice<=0)||(o.unitPrice>0&&o.unitPrice<old.unitPrice))Object.assign(old,o);omap.set(k,list)});
- omap.forEach(list=>list.sort((a,b)=>(a.unitPrice>0?0:1)-(b.unitPrice>0?0:1)||a.unitPrice-b.unitPrice||b.discount-a.discount));
+ omap.forEach(list=>list.sort((a,b)=>(b.discount-a.discount)||(a.unitPrice>0&&b.unitPrice>0?a.unitPrice-b.unitPrice:(a.unitPrice>0?-1:b.unitPrice>0?1:0))));
  const hmap=new Map();hist.forEach(h=>{const k=awardCode(h.code);if(k&&!hmap.has(k))hmap.set(k,h)});
  const items=[...pmap.values()].map(p=>{const os=omap.get(p.code)||[],h=hmap.get(p.code)||null;return {...p,offers:os,history:h}});
  const offered=items.filter(x=>x.offers.length);
@@ -455,6 +455,7 @@ function awardRefForSupplier(item,vendor){
  return null;
 }
 function awardAllocKey(code,vendor){return awardCode(code)+'|'+awardSupplierKey(vendor)}
+
 function awardRender(){
  const data=awardBuildData(),{items,offered,total,pareto}=data;
  $('awKpiPR').textContent=fmt(items.length);$('awKpiOffers').textContent=fmt(offered.length);$('awKpiPareto').textContent=fmt(pareto.length);$('awKpiValue').textContent=fmt(total);
@@ -462,49 +463,86 @@ function awardRender(){
  $('awardParetoSummary').textContent=offered.length?`تم تطبيق Pareto على ${fmt(offered.length)} صنفًا لها عروض فعلية فقط. مجموعة A تضم ${fmt(pareto.length)} صنفًا وتمثل ${pct(pctA)} من قيمة مجموعة العروض. الخصم المرجعي لا يدخل في قيمة العرض أو الوفر.`:'لا توجد أصناف لها عروض حالية مرتبطة بالطلبية.';
  $('awardParetoRows').innerHTML=offered.map(x=>`<tr><td>${esc(x.code)}</td><td>${esc(x.item)}</td><td class="num">${fmt(x.value)}</td><td>${pct(x.share)}</td><td>${pct(x.cumulative)}</td><td><span class="award-${x.pareto==='A'?'a':'b'}">${x.pareto==='A'?'A · أولوية':'B · عادي'}</span></td></tr>`).join('')||'<tr><td colspan="6" class="empty">لا توجد بيانات.</td></tr>';
  const q=norm($('awardSearch')?.value||''),f=$('awardFilter')?.value||'all';
- const filtered=items.filter(x=>(!q||norm(x.code+' '+x.item+' '+x.offers.map(o=>o.vendor).join(' ')).includes(q))&&(f==='all'||(f==='pareto'&&x.pareto==='A')||(f==='nooffer'&&!x.offers.length)||(f==='offer'&&x.offers.length)));
+ const filtered=items.filter(x=>(!q||norm(x.code+' '+x.item+' '+x.offers.map(o=>o.vendor).join(' ')+' '+(x.history?.bestVendor||'')).includes(q))&&(f==='all'||(f==='pareto'&&x.pareto==='A')||(f==='nooffer'&&!x.offers.length)||(f==='offer'&&x.offers.length)));
+ const offerCell=(o,rank,x)=>{
+   if(!o)return '<div class="muted">لا يوجد عرض</div>';
+   const ref=awardRefForSupplier(x,o.vendor);
+   const delta=ref?o.discount-ref.discount:null;
+   return `<div style="min-width:190px;line-height:1.8"><b>${rank}. ${esc(o.vendor)}</b><br><span class="muted">خصم حالي: </span><b>${pct(o.discount)}</b><br><span class="muted">سعر الوحدة: </span><b>${o.unitPrice>0?fmt(o.unitPrice):'غير متوفر'}</b><br><span class="muted">مقابل المرجع: </span>${delta===null?'لا توجد مقارنة':(delta>=0?'+':'')+pct(delta)}</div>`;
+ };
  let html='';
  filtered.forEach(x=>{
-  if(!x.offers.length){
-   const ref=x.history?.bestDiscount>0?`${esc(x.history.bestVendor||'أفضل مورد تاريخي')} · ${pct(x.history.bestDiscount)}`:'لا توجد مرجعية تاريخية';
-   html+=`<tr><td><span class="award-c">بدون عرض</span></td><td>${esc(x.code)}</td><td>${esc(x.item)}</td><td class="num">${fmt(x.qty)}</td><td class="num">${fmt(x.unitCost)}</td><td>—</td><td>—</td><td>—</td><td>—</td><td>${ref}</td><td>مرجعي فقط</td><td>—</td><td>—</td></tr>`;
-   return;
-  }
-  x.offers.forEach((o,i)=>{
-   const ref=awardRefForSupplier(x,o.vendor),refTxt=ref?`${esc(ref.vendor)} · ${pct(ref.discount)}`:'لا توجد مرجعية';
-   const delta=ref?o.discount-ref.discount:null,akey=awardAllocKey(x.code,o.vendor);
-   const defaultIndex=x.offers.findIndex(z=>z.unitPrice>0);const alloc=state.award.allocations[akey]!==undefined?num(state.award.allocations[akey]):(i===defaultIndex&&defaultIndex>=0?x.qty:0);
-   html+=`<tr><td><span class="award-${x.pareto==='A'?'a':'b'}">${x.pareto==='A'?'A':'B'}</span></td><td>${esc(x.code)}</td><td>${esc(x.item)}</td><td class="num">${fmt(x.qty)}</td><td class="num">${fmt(x.unitCost)}</td><td>${esc(o.vendor)}</td><td>${o.unitPrice>0?(i+1)+(i<3?' · مقترح':''):'غير قابل للترتيب'}</td><td>${pct(o.discount)}</td><td class="num">${o.unitPrice>0?fmt(o.unitPrice):'السعر غير متوفر'}</td><td>${refTxt}</td><td>${delta===null?'—':(delta>=0?'+':'')+pct(delta)}</td><td><input class="award-qty" type="number" min="0" step="1" data-aw-code="${esc(x.code)}" data-aw-vendor="${esc(o.vendor)}" value="${alloc}" ${o.unitPrice>0?"":"disabled"}></td><td class="num">${fmt(alloc*o.unitPrice)}</td></tr>`;
-  });
+   const top=x.offers.filter(o=>o.unitPrice>0).slice(0,3);
+   const historical=x.history?.bestDiscount>0?`<b>${esc(x.history.bestVendor||'غير محدد')}</b><br><b>${pct(x.history.bestDiscount)}</b>`:'لا توجد مرجعية';
+   const qtyFor=o=>o?num(state.award.allocations[awardAllocKey(x.code,o.vendor)]??0):0;
+   const allocations=top.map(qtyFor),allocated=allocations.reduce((a,b)=>a+b,0),remaining=Math.max(0,x.qty-allocated);
+   const input=(o,idx)=>o?`<input class="award-qty" type="number" min="0" max="${x.qty}" step="1" data-aw-code="${esc(x.code)}" data-aw-vendor="${esc(o.vendor)}" value="${qtyFor(o)}" style="width:85px">`:'—';
+   html+=`<tr>
+    <td><span class="award-${x.pareto==='A'?'a':x.pareto==='B'?'b':'c'}">${x.pareto==='A'?'A':x.pareto==='B'?'B':'—'}</span></td>
+    <td>${esc(x.code)}</td><td>${esc(x.item)}</td>
+    <td class="num">${fmt(x.qty)}</td><td class="num">${fmt(x.unitCost)}</td>
+    <td>${historical}</td><td>${x.history?.bestDiscount>0?pct(x.history.bestDiscount):'—'}</td>
+    <td>${offerCell(top[0],1,x)}</td><td>${input(top[0],0)}</td>
+    <td>${offerCell(top[1],2,x)}</td><td>${input(top[1],1)}</td>
+    <td>${offerCell(top[2],3,x)}</td><td>${input(top[2],2)}</td>
+    <td class="num">${fmt(allocated)}</td><td class="num" style="font-weight:700;color:${remaining===0?'#087443':'#b45309'}">${fmt(remaining)}</td>
+   </tr>`;
  });
- $('awardRows').innerHTML=html||'<tr><td colspan="13" class="empty">لا توجد أصناف مطابقة.</td></tr>';
- const sums={};items.forEach(x=>x.offers.forEach(o=>{const defaultIndex=x.offers.findIndex(z=>z.unitPrice>0);const qty=num(state.award.allocations[awardAllocKey(x.code,o.vendor)]??(x.offers.indexOf(o)===defaultIndex&&defaultIndex>=0?x.qty:0));if(!qty)return;const s=sums[o.vendor]||{supplier:o.vendor,items:0,qty:0,value:0,saving:0};s.items++;s.qty+=qty;s.value+=qty*o.unitPrice;s.saving+=(x.unitCost-o.unitPrice)*qty;sums[o.vendor]=s}));
- $('awardSupplierSummary').innerHTML=Object.values(sums).sort((a,b)=>b.value-a.value).map(s=>`<tr><td>${esc(s.supplier)}</td><td>${fmt(s.items)}</td><td>${fmt(s.qty)}</td><td>${fmt(s.value)}</td><td>${fmt(s.saving)}</td></tr>`).join('')||'<tr><td colspan="5" class="empty">لم يتم توزيع أي كميات.</td></tr>';
+ $('awardRows').innerHTML=html||'<tr><td colspan="15" class="empty">لا توجد أصناف مطابقة.</td></tr>';
+ const sums={};
+ items.forEach(x=>x.offers.forEach(o=>{
+   const qty=num(state.award.allocations[awardAllocKey(x.code,o.vendor)]??0);if(!qty)return;
+   const a=sums[o.vendor]||{supplier:o.vendor,items:0,qty:0,value:0};a.items++;a.qty+=qty;a.value+=qty*o.unitPrice;sums[o.vendor]=a;
+ }));
+ $('awardSupplierSummary').innerHTML=Object.values(sums).sort((a,b)=>b.value-a.value).map(a=>`<tr><td>${esc(a.supplier)}</td><td>${fmt(a.items)}</td><td>${fmt(a.qty)}</td><td>${fmt(a.value)}</td><td>—</td></tr>`).join('')||'<tr><td colspan="5" class="empty">لم يتم توزيع أي كميات.</td></tr>';
 }
+
+
 function awardValidateAlloc(input){
  const code=input.dataset.awCode,vendor=input.dataset.awVendor,qty=num(input.value);
- const item=awardBuildData().items.find(x=>x.code===awardCode(code));if(!item)return;const currentOffer=item.offers.find(o=>awardSupplierKey(o.vendor)===awardSupplierKey(vendor));if(!currentOffer||currentOffer.unitPrice<=0){toast('لا يمكن ترسية كمية على مورد لم يرد سعر وحدة في العرض.');input.value=0;return;}
- let sum=0;item.offers.forEach(o=>{const key=awardAllocKey(code,o.vendor);const defaultIndex=item.offers.findIndex(z=>z.unitPrice>0);sum+=key===awardAllocKey(code,vendor)?qty:num(state.award.allocations[key]??(item.offers.indexOf(o)===defaultIndex&&defaultIndex>=0?item.qty:0))});
- if(qty<0||sum>item.qty){toast(`إجمالي ترسية ${item.item} لا يجوز أن يتجاوز ${fmt(item.qty)} وحدة.`);input.value=state.award.allocations[awardAllocKey(code,vendor)]??(item.offers.indexOf(item.offers.find(o=>awardSupplierKey(o.vendor)===awardSupplierKey(vendor)))===0?item.qty:0);return}
+ const item=awardBuildData().items.find(x=>x.code===awardCode(code));if(!item)return;
+ const currentOffer=item.offers.find(o=>awardSupplierKey(o.vendor)===awardSupplierKey(vendor));
+ if(!currentOffer||currentOffer.unitPrice<=0){toast('لا يمكن الترسية على مورد لا يوجد له سعر وحدة.');input.value=0;return;}
+ let sum=0;
+ item.offers.forEach(o=>sum+=num(state.award.allocations[awardAllocKey(code,o.vendor)]??0));
+ sum=sum-num(state.award.allocations[awardAllocKey(code,vendor)]??0)+qty;
+ if(qty<0||sum>item.qty){toast(`إجمالي الترسية للصنف ${item.item} لا يجوز أن يتجاوز ${fmt(item.qty)}. المتاح حاليًا ${fmt(Math.max(0,item.qty-(sum-qty)))}.`);input.value=num(state.award.allocations[awardAllocKey(code,vendor)]??0);return;}
  state.award.allocations[awardAllocKey(code,vendor)]=qty;
- const row=input.closest('tr');if(row&&row.children[12])row.children[12].textContent=fmt(qty*(item.offers.find(o=>awardSupplierKey(o.vendor)===awardSupplierKey(vendor))?.unitPrice||0));
  awardRender();
 }
+
+
 function awardExportReport(){
  const data=awardBuildData(),rows=[];
  data.items.forEach(x=>{
-  if(!x.offers.length){rows.push({'Item Code':x.code,'Item Name':x.item,'Requested Qty':x.qty,'PR Unit Cost':x.unitCost,'Current Offer':'No current offer','Historical Best Supplier':x.history?.bestVendor||'','Historical Discount':x.history?.bestDiscount||'','Award Qty':0});return}
-  x.offers.forEach((o,i)=>{const defaultIndex=x.offers.findIndex(z=>z.unitPrice>0);const qty=num(state.award.allocations[awardAllocKey(x.code,o.vendor)]??(i===defaultIndex&&defaultIndex>=0?x.qty:0)),ref=awardRefForSupplier(x,o.vendor);rows.push({'Item Code':x.code,'Item Name':x.item,'Requested Qty':x.qty,'PR Unit Cost':x.unitCost,'Pareto Group':x.pareto,'Supplier':o.vendor,'Rank':i+1,'Current Discount':o.discount,'Current Unit Price':o.unitPrice,'VAT In Source':o.vat||'Not specified','Historical Reference Supplier':ref?.vendor||'','Historical Reference Discount':ref?.discount||'','Historical Match':ref?.match||'','Award Qty':qty,'Award Value':qty*o.unitPrice,'Estimated Saving vs PR Unit Cost':qty*(x.unitCost-o.unitPrice)})});
+  const top=x.offers.filter(o=>o.unitPrice>0).slice(0,3),allocated=top.reduce((a,o)=>a+num(state.award.allocations[awardAllocKey(x.code,o.vendor)]??0),0);
+  const row={'Item Code':x.code,'Item Name':x.item,'Requested Qty':x.qty,'PR Unit Cost':x.unitCost,'PR Total Value':x.value,'Pareto Group':x.pareto,'Historical Best Supplier':x.history?.bestVendor||'','Historical Best Discount':x.history?.bestDiscount||'','Total Awarded Qty':allocated,'Remaining Qty':Math.max(0,x.qty-allocated)};
+  for(let i=0;i<3;i++){
+   const o=top[i],n=i+1;
+   row[`Current Offer ${n} Supplier`]=o?.vendor||'';
+   row[`Current Offer ${n} Discount`]=o?.discount??'';
+   row[`Current Offer ${n} Unit Price`]=o?.unitPrice??'';
+   row[`Award Qty ${n}`]=o?num(state.award.allocations[awardAllocKey(x.code,o.vendor)]??0):0;
+   row[`Award Value ${n}`]=o?num(state.award.allocations[awardAllocKey(x.code,o.vendor)]??0)*o.unitPrice:0;
+  }
+  rows.push(row);
  });
- exportWorkbook('Awarding_Analysis_'+state.award.month,[{name:'Award Analysis',rows},{name:'Pareto 80-20',rows:data.offered.map(x=>({'Item Code':x.code,'Item Name':x.item,'PR Value':x.value,'Share':x.share,'Cumulative':x.cumulative,'Group':x.pareto}))}]);
+ exportWorkbook('Awarding_Analysis_'+state.award.month,[{name:'PR Awarding',rows},{name:'Pareto 80-20',rows:data.offered.map(x=>({'Item Code':x.code,'Item Name':x.item,'PR Value':x.value,'Share':x.share,'Cumulative':x.cumulative,'Group':x.pareto}))}]);
 }
+
+
 function awardExportPO(){
  const data=awardBuildData(),by={};
- data.items.forEach(x=>x.offers.forEach((o,i)=>{const defaultIndex=x.offers.findIndex(z=>z.unitPrice>0);const qty=num(state.award.allocations[awardAllocKey(x.code,o.vendor)]??(i===defaultIndex&&defaultIndex>=0?x.qty:0));if(qty<=0||o.unitPrice<=0)return;const a=by[o.vendor]||[];a.push({'Item Code':x.code,'Item Name':x.item,'UOM':'','Award Qty':qty,'Unit Price':o.unitPrice,'Discount':o.discount,'Line Value':qty*o.unitPrice});by[o.vendor]=a}));
+ data.items.forEach(x=>x.offers.forEach(o=>{
+  const qty=num(state.award.allocations[awardAllocKey(x.code,o.vendor)]??0);
+  if(qty<=0||o.unitPrice<=0)return;
+  const a=by[o.vendor]||[];a.push({'Item Code':x.code,'Item Name':x.item,'UOM':'','Requested Qty':x.qty,'Award Qty':qty,'Remaining Qty':Math.max(0,x.qty-x.offers.reduce((sum,z)=>sum+num(state.award.allocations[awardAllocKey(x.code,z.vendor)]??0),0)),'Unit Price':o.unitPrice,'Discount':o.discount,'Line Value':qty*o.unitPrice});by[o.vendor]=a;
+ }));
  const sheets=Object.entries(by).map(([vendor,rows])=>({name:vendor,rows}));
  if(!sheets.length){toast('لا توجد كميات مرسّاة لتصدير أوامر الموردين.');return}
  exportWorkbook('Supplier_POs_'+state.award.month,sheets);
 }
+
 function awardBindEvents(){
  $('awardPRFile').onchange=async e=>{const f=e.target.files[0];if(!f)return;try{const r=await awardReadPRFile(f);state.award.pr=r.rows;state.award.month=$('awardMonthInput').value||state.month;state.award.pr.forEach(x=>x.month=state.award.month);$('awardStatus').textContent=`تم تحميل الطلبية: ${f.name} · ${fmt(r.rows.length)} سجل`;state.award.allocations={};awardRender();}catch(err){toast('خطأ في قراءة الطلبية: '+err.message)}};
  $('awardOffersFile').onchange=async e=>{const f=e.target.files[0];if(!f)return;try{const r=await awardReadOffersFile(f);state.award.offers=r.rows;$('awardStatus').textContent=`تم تحميل العروض: ${f.name} · ${fmt(r.rows.length)} عرض فعلي`;awardRender();}catch(err){toast('خطأ في قراءة العروض: '+err.message)}};
