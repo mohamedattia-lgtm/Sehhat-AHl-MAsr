@@ -141,7 +141,7 @@
    <label>المرجعية التاريخية <input type="file" id="awardHistoryFile" accept=".xlsx,.xls"></label>
    <button class="btn soft" id="awardUseSystemPR">استخدام PR المحمل بالنظام</button>
    <button class="btn soft" id="awardRecalc">إعادة التحليل</button>
-   <button class="btn primary" id="awardExportReport">تصدير تقرير الترسية</button>
+   <button class="btn primary" id="awardExportReport">تصدير تقرير الترسية بالتوصية</button>
    <button class="btn primary" id="awardExportPO">تصدير أوامر الموردين</button>
   </div>
   <div id="awardStatus" class="muted" style="font-size:12px;margin-bottom:12px">ارفع الملفات الثلاثة أو استخدم PR المحمل بالنظام.</div>
@@ -351,7 +351,15 @@ function renderPR(){let a=state.pr.filter(x=>x.month===state.month),rec={};for(l
 function exportWorkbook(filename,sheets){
  if(!window.XLSX){toast('مكتبة Excel غير متاحة');return}
  const wb=XLSX.utils.book_new();
- for(const sh of sheets){const rows=sh.rows||[];const ws=XLSX.utils.json_to_sheet(rows);XLSX.utils.book_append_sheet(wb,ws,(sh.name||'Data').slice(0,31))}
+ for(const sh of sheets){
+  const rows=sh.rows||[],ws=XLSX.utils.json_to_sheet(rows);
+  if(rows.length){
+   const headers=Object.keys(rows[0]);
+   ws['!cols']=headers.map(h=>({wch:Math.min(34,Math.max(14,String(h).length+3))}));
+   ws['!autofilter']={ref:ws['!ref']};
+  }
+  XLSX.utils.book_append_sheet(wb,ws,(sh.name||'Data').slice(0,31));
+ }
  XLSX.writeFile(wb,filename+'.xlsx');toast('تم تجهيز ملف Excel')
 }
 function exportPR(){const a=state.pr.filter(x=>x.month===state.month);const alloc=state.prVendor.filter(x=>x.month===state.month);exportWorkbook('PR_'+state.month,[{name:'PR Overall',rows:a.map(x=>({'Month':x.month,'Item Code':x.code,'Item Name':x.item,'Allocated Supplier(s)':[...new Set(alloc.filter(v=>norm(v.code)===norm(x.code)).map(v=>v.supplier))].join(', '),'UOM':x.uom,'Requested Qty':x.qty,'Unit Cost':x.unitCost,'Total Cost':x.value,'Source Sheet':x.sourceSheet,'Source Row':x.sourceRow}))},{name:'Supplier Allocation',rows:alloc.map(x=>({'Month':x.month,'Supplier':x.supplier,'Item Code':x.code,'Item Name':x.item,'Allocated Qty':x.qty,'Unit Cost':x.unitCost,'Total Cost':x.value,'Source Sheet':x.sourceSheet,'Source Row':x.sourceRow}))},{name:'PR Summary',rows:[{'Month':state.month,'Total PR Value':a.reduce((s,x)=>s+x.value,0),'Total PR Qty':a.reduce((s,x)=>s+x.qty,0),'Distinct Items':new Set(a.map(x=>x.code)).size}]}])}
@@ -548,24 +556,37 @@ function awardLiveAllocation(input){
 
 function awardValidateAlloc(input){awardLiveAllocation(input);}
 
+
 function awardExportReport(){
  const data=awardBuildData(),rows=[];
  data.items.forEach(x=>{
-  const top=x.offers.filter(o=>o.unitPrice>0).slice(0,3),allocated=top.reduce((a,o)=>a+num(state.award.allocations[awardAllocKey(x.code,o.vendor)]??0),0);
-  const row={'Item Code':x.code,'Item Name':x.item,'Requested Qty':x.qty,'PR Unit Cost':x.unitCost,'PR Total Value':x.value,'Pareto Group':x.pareto,'Historical Best Supplier':x.history?.bestVendor||'','Historical Best Discount':x.history?.bestDiscount||'','Total Awarded Qty':allocated,'Remaining Qty':Math.max(0,x.qty-allocated)};
+  const top=x.offers.filter(o=>o.unitPrice>0).slice(0,3);
+  const recommended=top[0]||null;
+  const allocated=top.reduce((a,o)=>a+num(state.award.allocations[awardAllocKey(x.code,o.vendor)]??0),0);
+  const row={
+   'Item Code':x.code,'Item Name':x.item,'Requested Qty':x.qty,
+   'PR Unit Cost':x.unitCost,'PR Total Value':x.value,'Pareto Group':x.pareto,
+   'Historical Best Supplier':x.history?.bestVendor||'',
+   'Historical Reference Discount':x.history?.bestDiscount??'',
+   'SYSTEM RECOMMENDATION':recommended?.vendor||'No current priced offer',
+   'Recommendation Current Discount':recommended?.discount??'',
+   'Recommendation Unit Price':recommended?.unitPrice??'',
+   'Recommendation Basis':recommended?'Highest current comparable discount; lower unit price breaks ties':'No valid priced current offer',
+   'Total Awarded Qty':allocated,'Remaining Qty':Math.max(0,x.qty-allocated)
+  };
   for(let i=0;i<3;i++){
-   const o=top[i],n=i+1;
+   const o=top[i],n=i+1,qty=o?num(state.award.allocations[awardAllocKey(x.code,o.vendor)]??0):0;
    row[`Current Offer ${n} Supplier`]=o?.vendor||'';
    row[`Current Offer ${n} Discount`]=o?.discount??'';
    row[`Current Offer ${n} Unit Price`]=o?.unitPrice??'';
-   row[`Award Qty ${n}`]=o?num(state.award.allocations[awardAllocKey(x.code,o.vendor)]??0):0;
-   row[`Award Value ${n}`]=o?num(state.award.allocations[awardAllocKey(x.code,o.vendor)]??0)*o.unitPrice:0;
+   row[`Award Qty ${n}`]=qty;
+   row[`Award Value ${n}`]=o?qty*o.unitPrice:0;
   }
   rows.push(row);
  });
- exportWorkbook('Awarding_Analysis_'+state.award.month,[{name:'PR Awarding',rows},{name:'Pareto 80-20',rows:data.offered.map(x=>({'Item Code':x.code,'Item Name':x.item,'PR Value':x.value,'Share':x.share,'Cumulative':x.cumulative,'Group':x.pareto}))}]);
+ const paretoRows=data.offered.map(x=>({'Item Code':x.code,'Item Name':x.item,'PR Value':x.value,'Share':x.share,'Cumulative':x.cumulative,'Group':x.pareto}));
+ exportWorkbook('Awarding_Analysis_'+state.award.month,[{name:'PR Awarding',rows},{name:'Pareto 80-20',rows:paretoRows}]);
 }
-
 
 function awardExportPO(){
  const data=awardBuildData(),by={};
