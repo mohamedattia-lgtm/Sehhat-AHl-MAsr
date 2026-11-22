@@ -96,6 +96,9 @@
       <div class="card"><div class="label">قيمة أوامر التوريد</div><div class="value" id="poValue">—</div><div class="hint">EGP · إجمالي قيمة الطلبات</div></div>
       <div class="card"><div class="label">استلامات خارج أصناف PR</div><div class="value" id="unmatchedReceiptValue">—</div><div class="hint">EGP · لا تدخل في نسبة تحقيق PR</div></div>
       <div class="card"><div class="label">نسبة تغطية PR بالكميات</div><div class="value" id="prRate">—</div><div class="hint">كمية الاستلامات المطابقة ÷ كمية PR</div></div>
+      <div class="card"><div class="label">أصناف تم توريدها بالكامل</div><div class="value" id="prItemsFull">—</div><div class="hint">عدد الأصناف · <span id="prItemsFullRate">—</span> من إجمالي أصناف PR</div></div>
+      <div class="card"><div class="label">أصناف تم توريدها جزئيًا</div><div class="value" id="prItemsPartial">—</div><div class="hint">عدد الأصناف · <span id="prItemsPartialRate">—</span> من إجمالي أصناف PR</div></div>
+      <div class="card"><div class="label">أصناف لم يتم توريدها</div><div class="value" id="prItemsZero">—</div><div class="hint">عدد الأصناف · <span id="prItemsZeroRate">—</span> من إجمالي أصناف PR</div></div>
       
     </div>
     <div class="layout">
@@ -359,6 +362,19 @@ function exportWorkbook(filename,sheets){
  const wb=XLSX.utils.book_new();
  for(const sh of sheets){
   const rows=sh.rows||[],ws=XLSX.utils.json_to_sheet(rows);
+  if(sh.name==='PR Awarding' && rows.length){
+   const headers=Object.keys(rows[0]),col=name=>headers.indexOf(name);
+   const req=col('Requested Qty'),total=col('Total Awarded Qty'),remaining=col('Remaining Qty');
+   const qtyCols=[1,2,3].map(n=>col('Award Qty '+n)).filter(n=>n>=0);
+   const valueCols=[1,2,3].map(n=>({q:col('Award Qty '+n),p:col('Current Offer '+n+' Unit Price'),v:col('Award Value '+n)})).filter(x=>x.q>=0&&x.p>=0&&x.v>=0);
+   for(let rr=2;rr<=rows.length+1;rr++){
+    const cell=c=>XLSX.utils.encode_cell({r:rr-1,c});
+    if(total>=0){const a=cell(total),refs=qtyCols.map(cell);ws[a]={t:'n',f:refs.length?'SUM('+refs.join(',')+')':'0',v:0};}
+    if(remaining>=0&&req>=0&&total>=0){const a=cell(remaining);ws[a]={t:'n',f:'MAX(0,'+cell(req)+'-'+cell(total)+')',v:0};}
+    valueCols.forEach(x=>{ws[cell(x.v)]={t:'n',f:cell(x.q)+'*'+cell(x.p),v:0};});
+   }
+   wb.Workbook=wb.Workbook||{};wb.Workbook.CalcPr={fullCalcOnLoad:true,forceFullCalc:true};
+  }
   if(rows.length){
    const headers=Object.keys(rows[0]);
    ws['!cols']=headers.map(h=>({wch:Math.min(38,Math.max(14,String(h).length+3))}));
@@ -399,12 +415,34 @@ function renderCustomModules(){const host=$('customModuleList');if(!host)return;
 function renderSettings(){if(!$('userRows'))return;$('userRows').innerHTML=state.users.map((u,i)=>`<tr><td>${esc(u.name)}</td><td>${esc(u.email||'—')}</td><td><select data-role="${i}"><option value="procurement_manager" ${u.role==='procurement_manager'?'selected':''}>Manager / Admin</option><option value="procurement_supervisor" ${u.role==='procurement_supervisor'?'selected':''}>Supervisor</option><option value="procurement_specialist" ${u.role==='procurement_specialist'?'selected':''}>Specialist</option></select></td><td>✓</td><td>✓</td><td>${u.role==='procurement_manager'?'✓':'—'}</td><td><button class="btn soft" data-toggle="${i}">${u.active?'إيقاف':'تفعيل'}</button></td></tr>`).join('');document.querySelectorAll('[data-role]').forEach(el=>{el.disabled=currentProfile?.role!=='admin';el.onchange=async()=>{let u=state.users[+el.dataset.role],roleMap={procurement_manager:'admin',procurement_supervisor:'supervisor',procurement_specialist:'specialist'};const {error}=await sb.from('profiles').update({role:roleMap[el.value]}).eq('id',u.id);if(error){toast('تعذر تعديل الدور: '+error.message);renderSettings();return;}u.role=el.value;audit('تعديل صلاحية',u.name+' → '+el.value);}});document.querySelectorAll('[data-toggle]').forEach(el=>{el.disabled=currentProfile?.role!=='admin';el.onclick=async()=>{let u=state.users[+el.dataset.toggle],next=!u.active;const {error}=await sb.from('profiles').update({is_active:next}).eq('id',u.id);if(error){toast('تعذر تغيير حالة المستخدم: '+error.message);return;}u.active=next;audit('تغيير حالة مستخدم',u.name);renderSettings();};});if(currentProfile?.role!=='admin'){const add=$('addUser');if(add)add.disabled=true;}$('aliasRows').innerHTML=state.aliases.map(x=>`<div>${esc(x.from)} ← ${esc(x.to)}</div>`).join('')||'لا توجد أسماء بديلة مضافة.';$('auditRows').innerHTML=state.audit.map(x=>`<div style="padding:7px;border-bottom:1px solid #eee">${esc(x.time)} · ${esc(x.action)} · ${esc(x.detail)}</div>`).join('')||'لا توجد تعديلات مسجلة.';renderCustomModules()}
 function fmt(n){return new Intl.NumberFormat('en-US',{maximumFractionDigits:2}).format(n||0)}
 function pct(n){return n===null||!Number.isFinite(n)?'—':(n*100).toFixed(1)+'%'}
+function getPRItemFulfillment(month=state.month){
+ const requested=new Map();
+ for(const x of state.pr.filter(x=>x.month===month&&norm(x.code)&&x.qty>0)){
+  const code=norm(x.code),g=requested.get(code)||{code:x.code,item:x.item||'',requestedQty:0};
+  g.requestedQty+=x.qty;if(!g.item&&x.item)g.item=x.item;requested.set(code,g);
+ }
+ const received=new Map();
+ for(const x of state.receipts.filter(x=>x.month===month&&norm(x.code))){
+  const code=norm(x.code);received.set(code,(received.get(code)||0)+x.qty);
+ }
+ return [...requested.values()].map(x=>{
+  const receivedQty=received.get(norm(x.code))||0;
+  const status=receivedQty>=x.requestedQty?'كامل':receivedQty>0?'جزئي':'غير مورد';
+  return {...x,receivedQty,status,fulfillment:x.requestedQty?receivedQty/x.requestedQty:0};
+ });
+}
+
 function draw(){
  aggregate();let sum=(a,k)=>a.reduce((v,x)=>v+(x[k]||0),0);
  const prMonth=state.pr.filter(x=>x.month===state.month),prMap=new Map();for(const x of prMonth){let k=norm(x.code),g=prMap.get(k)||{qty:0,value:0};g.qty+=x.qty;g.value+=x.value;prMap.set(k,g)}
  const prValue=sum(prMonth,'value'),prQty=sum(prMonth,'qty');let achievedValue=0,achievedQty=0,unmatchedReceiptValue=0,unmatchedReceiptQty=0;
  for(const r of state.receipts.filter(x=>x.month===state.month)){if(prMap.has(norm(r.code))){achievedValue+=r.value;achievedQty+=r.qty}else{unmatchedReceiptValue+=r.value;unmatchedReceiptQty+=r.qty}}
  $('prValue').textContent=fmt(prValue);$('prAchievedValue').textContent=fmt(achievedValue);$('valueRate').textContent=prValue?pct(achievedValue/prValue):'—';$('prRate').textContent=prQty?pct(achievedQty/prQty):'—';
+ const itemFulfillment=getPRItemFulfillment(),itemTotal=itemFulfillment.length;
+ const itemCounts={full:itemFulfillment.filter(x=>x.status==='كامل').length,partial:itemFulfillment.filter(x=>x.status==='جزئي').length,zero:itemFulfillment.filter(x=>x.status==='غير مورد').length};
+ $('prItemsFull').textContent=fmt(itemCounts.full);$('prItemsFullRate').textContent=pct(itemTotal?itemCounts.full/itemTotal:null);
+ $('prItemsPartial').textContent=fmt(itemCounts.partial);$('prItemsPartialRate').textContent=pct(itemTotal?itemCounts.partial/itemTotal:null);
+ $('prItemsZero').textContent=fmt(itemCounts.zero);$('prItemsZeroRate').textContent=pct(itemTotal?itemCounts.zero/itemTotal:null);
  const p=state.summary.filter(x=>x.ordered>0),pov=sum(p,'poValue');$('poValue').textContent=fmt(pov);$('unmatchedReceiptValue').textContent=fmt(unmatchedReceiptValue);
  const groups={};
  for(const x of state.prVendor.filter(x=>x.month===state.month)){let key=canonSupplier(x.supplier),g=groups[key]||{supplier:x.supplier,ordered:0,received:0,prValue:0,receiptValue:0,codes:new Set()};g.ordered+=x.qty;g.prValue+=x.value;g.codes.add(norm(x.code));groups[key]=g}
@@ -562,24 +600,29 @@ function awardRenderSupplierSummary(){
  $('awardSupplierSummary').innerHTML=Object.values(sums).sort((a,b)=>b.value-a.value).map(a=>`<tr><td>${esc(a.supplier)}</td><td>${fmt(a.items)}</td><td>${fmt(a.qty)}</td><td>${fmt(a.value)}</td><td>—</td></tr>`).join('')||'<tr><td colspan="5" class="empty">لم يتم توزيع أي كميات.</td></tr>';
 }
 function awardLiveAllocation(input){
- const code=input.dataset.awCode,vendor=input.dataset.awVendor,qty=num(input.value);
- const item=awardBuildData().items.find(x=>x.code===awardCode(code));if(!item)return;
- const key=awardAllocKey(code,vendor),old=num(state.award.allocations[key]??0);
- let other=0;item.offers.forEach(o=>{if(awardSupplierKey(o.vendor)!==awardSupplierKey(vendor))other+=num(state.award.allocations[awardAllocKey(code,o.vendor)]??0)});
- const max=Math.max(0,item.qty-other);
- if(qty<0||qty>max){input.value=String(Math.min(Math.max(qty,0),max));toast(`المتاح لهذا المورد ${fmt(max)} فقط؛ لا يمكن تجاوز إجمالي المطلوب.`);}
- const finalQty=num(input.value);
- state.award.allocations[key]=finalQty;
- const row=input.closest('tr');if(row){
-  let allocated=0;row.querySelectorAll('.award-qty').forEach(el=>allocated+=num(el.value));
-  const remaining=Math.max(0,item.qty-allocated);
-  const totalEl=row.querySelector('[data-aw-total]'),remainEl=row.querySelector('[data-aw-remaining]');
-  if(totalEl)totalEl.textContent=fmt(allocated);
-  if(remainEl){remainEl.textContent=fmt(remaining);remainEl.classList.toggle('zero',remaining===0);}
+ const code=awardCode(input.dataset.awCode),vendor=input.dataset.awVendor;
+ const item=awardBuildData().items.find(x=>awardCode(x.code)===code);if(!item)return;
+ const row=input.closest('tr');if(!row)return;
+ const fields=[...row.querySelectorAll('.award-qty')];
+ const current=Math.max(0,num(input.value));
+ let other=0;fields.forEach(el=>{if(el!==input)other+=Math.max(0,num(el.value));});
+ const available=Math.max(0,item.qty-other);
+ if(current>available){
+  input.value=String(available);
+  toast('تم ضبط الكمية على المتبقي المتاح للصنف حتى لا تتجاوز إجمالي الطلب.');
  }
+ state.award.allocations[awardAllocKey(code,vendor)]=Math.max(0,num(input.value));
+ let allocated=0;
+ fields.forEach(el=>{
+  const q=Math.max(0,num(el.value));allocated+=q;
+  state.award.allocations[awardAllocKey(code,el.dataset.awVendor)]=q;
+ });
+ const remaining=Math.max(0,item.qty-allocated);
+ const totalEl=row.querySelector('[data-aw-total]'),remainEl=row.querySelector('[data-aw-remaining]');
+ if(totalEl)totalEl.textContent=fmt(allocated);
+ if(remainEl){remainEl.textContent=fmt(remaining);remainEl.classList.toggle('zero',remaining===0);}
  awardRenderSupplierSummary();
 }
-
 function awardValidateAlloc(input){awardLiveAllocation(input);}
 
 
