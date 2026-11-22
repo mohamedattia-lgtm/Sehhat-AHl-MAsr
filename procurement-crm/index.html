@@ -49,6 +49,12 @@
 .award-total{font-weight:800;color:#17365d}
 @media(max-width:900px){#awarding .award-grid{grid-template-columns:repeat(2,1fr)}}
 
+
+#awarding .award-recommend{box-shadow:0 2px 7px rgba(10,90,55,.08)}
+#awarding .award-historical-only{display:inline-flex;flex-direction:column;gap:3px;padding:8px 10px;border-radius:8px;background:#fff7e6;border:1px solid #f2d28d;color:#81520a;min-width:150px}
+#awarding .award-current-best{display:inline-flex;flex-direction:column;gap:3px;padding:8px 10px;border-radius:8px;background:#edf4ff;border:1px solid #bdd2f3;color:#17427a;min-width:150px}
+#awarding .award-qty{display:block}
+
 </style>
 </head>
 <body>
@@ -155,13 +161,13 @@
  <div class="panel" style="margin-top:14px">
   <div class="panelhead"><h3>تحليل 80/20 للأصناف التي لها عروض</h3><span class="pill">Pareto داخل مجموعة العروض فقط</span></div>
   <div id="awardParetoSummary" class="note">سيظهر التحليل بعد تحميل البيانات.</div>
-  <div class="tablewrap"><table><thead><tr><th>كود الصنف</th><th>الصنف</th><th>قيمة الطلبية</th><th>النسبة من مجموعة العروض</th><th>التراكمي</th><th>الأهمية</th></tr></thead><tbody id="awardParetoRows"><tr><td colspan="6" class="empty">لا توجد بيانات بعد.</td></tr></tbody></table></div>
+  <div class="tablewrap"><table><thead><tr><th>كود الصنف</th><th>الصنف</th><th>أفضل مورد تاريخيًا</th><th>أفضل خصم مرجعي</th><th>أفضل مورد بعرض حالي</th><th>أفضل خصم حالي</th><th>توصية النظام</th><th>قيمة الطلبية</th></tr></thead><tbody id="awardParetoRows"><tr><td colspan="8" class="empty">لا توجد بيانات بعد.</td></tr></tbody></table></div>
  </div>
  <div class="panel" style="margin-top:14px">
   <div class="panelhead"><h3>مقارنة العروض وترتيب الموردين</h3><span class="pill">أفضل 3 خصومات حالية لكل صنف</span></div>
   <div class="toolbar" style="margin:10px 0"><input id="awardSearch" placeholder="بحث بكود الصنف أو الاسم أو المورد"><select id="awardFilter"><option value="all">كل الأصناف</option><option value="pareto">أصناف 80/20 فقط</option><option value="nooffer">بدون عرض حالي</option><option value="offer">لها عرض حالي</option></select></div>
   <div class="tablewrap"><table><thead><tr><th>الأهمية</th><th>كود الصنف</th><th>الصنف</th><th>الكمية المطلوبة</th><th>تكلفة PR</th><th>أفضل مورد تاريخيًا</th><th>الخصم المرجعي</th><th>توصية النظام</th><th>أفضل عرض حالي #1</th><th>ترسية #1</th><th>ثاني أفضل عرض #2</th><th>ترسية #2</th><th>ثالث أفضل عرض #3</th><th>ترسية #3</th><th>إجمالي المرسّى</th><th>المتبقي</th></tr></thead><tbody id="awardRows"><tr><td colspan="16" class="empty">ارفع ملفات الترسية لبدء المقارنة.</td></tr></tbody></table></div>
-  <div class="note">كل صنف يظهر في صف واحد مع توصية النظام، وأفضل 3 عروض حالية. أدخل الكميات؛ إجمالي المرسّى والمتبقي يتحدثان تلقائيًا مع كل تعديل، ولا يمكن تجاوز الكمية المطلوبة. سعر الوحدة هو السعر الوارد بملف العرض، وحقل VAT يُعرض كمرجع فقط عند وجوده ولا تتم إضافة ضريبة غير مثبتة. فرق السعر عن تكلفة PR استرشادي لحين توحيد أساس الضريبة.</div>
+  <div class="note">كل صنف يظهر في صف واحد مع توصية النظام؛ عند غياب العرض الحالي تظهر أفضل مرجعية تاريخية بوضوح كمرجع فقط وليست عرضًا جديدًا، ثم أفضل 3 عروض حالية إن وجدت. أدخل الكميات؛ إجمالي المرسّى والمتبقي يتحدثان تلقائيًا مع كل تعديل، ولا يمكن تجاوز الكمية المطلوبة. سعر الوحدة هو السعر الوارد بملف العرض، وحقل VAT يُعرض كمرجع فقط عند وجوده ولا تتم إضافة ضريبة غير مثبتة. فرق السعر عن تكلفة PR استرشادي لحين توحيد أساس الضريبة.</div>
  </div>
  <div class="panel" style="margin-top:14px">
   <div class="panelhead"><h3>ملخص الترسية حسب المورد</h3><span class="pill">Supplier PO Summary</span></div>
@@ -495,7 +501,19 @@ function awardRender(){
  $('awKpiPR').textContent=fmt(items.length);$('awKpiOffers').textContent=fmt(offered.length);$('awKpiPareto').textContent=fmt(pareto.length);$('awKpiValue').textContent=fmt(total);
  const pctA=total?pareto.reduce((s,x)=>s+x.value,0)/total:0;
  $('awardParetoSummary').textContent=offered.length?`تم تطبيق Pareto على ${fmt(offered.length)} صنفًا لها عروض فعلية فقط. مجموعة A تضم ${fmt(pareto.length)} صنفًا وتمثل ${pct(pctA)} من قيمة مجموعة العروض. الخصم المرجعي لا يدخل في قيمة العرض أو الوفر.`:'لا توجد أصناف لها عروض حالية مرتبطة بالطلبية.';
- $('awardParetoRows').innerHTML=offered.map(x=>`<tr><td>${esc(x.code)}</td><td>${esc(x.item)}</td><td class="num">${fmt(x.value)}</td><td>${pct(x.share)}</td><td>${pct(x.cumulative)}</td><td><span class="award-${x.pareto==='A'?'a':'b'}">${x.pareto==='A'?'A · أولوية':'B · عادي'}</span></td></tr>`).join('')||'<tr><td colspan="6" class="empty">لا توجد بيانات.</td></tr>';
+ $('awardParetoRows').innerHTML=offered.map(x=>{
+  const current=x.offers.filter(o=>o.unitPrice>0).sort((a,b)=>(b.discount-a.discount)||(a.unitPrice-b.unitPrice))[0]||null;
+  const hist=x.history?.bestDiscount>0?`<b>${esc(x.history.bestVendor||'غير محدد')}</b>`:'—';
+  const histPct=x.history?.bestDiscount>0?pct(x.history.bestDiscount):'—';
+  const currentVendor=current?`<span class="award-current-best"><b>${esc(current.vendor)}</b><small>سعر الوحدة ${fmt(current.unitPrice)}</small></span>`:'لا يوجد عرض حالي';
+  const currentPct=current?pct(current.discount):'—';
+  const recommendation=current
+   ?`<span class="award-recommend"><small>توصية حالية</small><strong>${esc(current.vendor)}</strong><em>${currentPct} خصم</em></span>`
+   :x.history?.bestDiscount>0
+    ?`<span class="award-historical-only"><small>مرجع تاريخي فقط</small><b>${esc(x.history.bestVendor||'أفضل مورد تاريخي')}</b><strong>${histPct}</strong></span>`
+    :'<span class="muted">لا توجد توصية أو مرجعية</span>';
+  return `<tr><td>${esc(x.code)}</td><td>${esc(x.item)}</td><td>${hist}</td><td>${histPct}</td><td>${currentVendor}</td><td>${currentPct}</td><td>${recommendation}</td><td class="num">${fmt(x.value)}</td></tr>`;
+ }).join('')||'<tr><td colspan="8" class="empty">لا توجد بيانات.</td></tr>';
  const q=norm($('awardSearch')?.value||''),f=$('awardFilter')?.value||'all';
  const filtered=items.filter(x=>(!q||norm(x.code+' '+x.item+' '+x.offers.map(o=>o.vendor).join(' ')+' '+(x.history?.bestVendor||'')).includes(q))&&(f==='all'||(f==='pareto'&&x.pareto==='A')||(f==='nooffer'&&!x.offers.length)||(f==='offer'&&x.offers.length)));
  const offerCell=(o,rank)=>{
@@ -510,8 +528,8 @@ function awardRender(){
    const historicalDiscount=x.history?.bestDiscount>0?pct(x.history.bestDiscount):'—';
    const qtyFor=o=>o?num(state.award.allocations[awardAllocKey(x.code,o.vendor)]??0):0;
    const allocated=top.reduce((a,o)=>a+qtyFor(o),0),remaining=Math.max(0,x.qty-allocated);
-   const input=o=>o?`<input class="award-qty" type="number" min="0" max="${x.qty}" step="1" data-aw-code="${esc(x.code)}" data-aw-vendor="${esc(o.vendor)}" value="${qtyFor(o)}" aria-label="كمية الترسية للمورد ${esc(o.vendor)}">`:'—';
-   const recommendation=best?`<div class="award-recommend"><small>⭐ توصية النظام · أعلى خصم حالي</small><strong>${esc(best.vendor)}</strong><em>${pct(best.discount)} خصم · ${fmt(best.unitPrice)} سعر الوحدة</em></div>`:'<span class="muted">لا توجد توصية: لا يوجد عرض بسعر صالح</span>';
+   const input=o=>o?`<input class="award-qty" type="number" min="0" max="${x.qty}" step="1" data-aw-code="${esc(x.code)}" data-aw-vendor="${esc(o.vendor)}" value="${qtyFor(o)}" oninput="awardLiveAllocation(this)" onchange="awardValidateAlloc(this)" aria-label="كمية الترسية للمورد ${esc(o.vendor)}">`:'—';
+   const recommendation=best?`<div class="award-recommend"><small>⭐ توصية النظام · عرض حالي</small><strong>${esc(best.vendor)}</strong><em>${pct(best.discount)} خصم · ${fmt(best.unitPrice)} سعر الوحدة</em></div>`:x.history?.bestDiscount>0?`<div class="award-historical-only"><small>مرجع تاريخي فقط · لا يوجد عرض جديد</small><b>${esc(x.history.bestVendor||'أفضل مورد تاريخي')}</b><strong>${pct(x.history.bestDiscount)}</strong></div>`:'<span class="muted">لا توجد توصية أو مرجعية</span>';
    html+=`<tr data-aw-row="${esc(x.code)}" data-aw-requested="${x.qty}">
     <td><span class="award-${x.pareto==='A'?'a':x.pareto==='B'?'b':'c'}">${x.pareto==='A'?'A':x.pareto==='B'?'B':'—'}</span></td>
     <td>${esc(x.code)}</td><td>${esc(x.item)}</td>
