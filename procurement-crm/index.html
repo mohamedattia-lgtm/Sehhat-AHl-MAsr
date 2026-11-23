@@ -317,7 +317,7 @@ const $=id=>document.getElementById(id);
 let currentProfile = null, workspaceChannel = null, saveTimer = null, applyingRemote = false;
 const cloudFiles = [];
 function setCloudStatus(message, good=true){const el=document.getElementById('cloudStatus');if(el){el.textContent=message;el.style.color=good?'#15966a':'#c2414b'}}
-function serializableState(){return {po:state.po,receipts:state.receipts,pr:state.pr,prVendor:state.prVendor,summary:state.summary,history:state.history,month:state.month,aliases:state.aliases,audit:state.audit,customModules:state.customModules,award:state.award,inventoryPlanning:state.inventoryPlanning,cloudFiles};}
+function serializableState(){const ip=state.inventoryPlanning||{};return {po:state.po,receipts:state.receipts,pr:state.pr,prVendor:state.prVendor,summary:state.summary,history:state.history,month:state.month,aliases:state.aliases,audit:state.audit,customModules:state.customModules,award:state.award,inventoryPlanning:{loaded:!!ip.loaded,sourceNames:ip.sourceNames||[],onHandPath:ip.onHandPath||null,consumptionPath:ip.consumptionPath||null},cloudFiles};}
 async function persistWorkspace(){
  if(!currentProfile || applyingRemote) return;
  const payload=serializableState();
@@ -329,7 +329,7 @@ function scheduleWorkspaceSave(){if(!currentProfile||applyingRemote)return;clear
 async function loadWorkspace(showToast=false){
  const {data,error}=await sb.from('procurement_workspace').select('payload,updated_by').eq('workspace_key','main').maybeSingle();
  if(error) throw error;
- if(data?.payload){applyingRemote=true;const p=data.payload;for(const k of ['po','receipts','pr','prVendor','summary','history','month','aliases','audit','customModules','award','inventoryPlanning'])if(p[k]!==undefined)state[k]=p[k];cloudFiles.splice(0,cloudFiles.length,...(p.cloudFiles||[]));const allMonths=[...new Set([state.month,...state.pr,...state.po,...state.receipts].map(x=>x.month).filter(Boolean))].sort();$('monthFilter').innerHTML=allMonths.map(m=>`<option value="${m}">${m}</option>`).join('');$('monthFilter').value=state.month;draw();applyingRemote=false;}
+ if(data?.payload){applyingRemote=true;const p=data.payload;for(const k of ['po','receipts','pr','prVendor','summary','history','month','aliases','audit','customModules','award','inventoryPlanning'])if(p[k]!==undefined)state[k]=p[k];cloudFiles.splice(0,cloudFiles.length,...(p.cloudFiles||[]));const allMonths=[...new Set([state.month,...state.pr,...state.po,...state.receipts].map(x=>x.month).filter(Boolean))].sort();$('monthFilter').innerHTML=allMonths.map(m=>`<option value="${m}">${m}</option>`).join('');$('monthFilter').value=state.month;try{await ropRestoreFromStorage();}catch(e){setCloudStatus('تم تحميل بيانات النظام، وتعذر استرجاع ملفات تحليل المخزون: '+e.message,false)}draw();applyingRemote=false;}
  else {await persistWorkspace();}
  if(showToast)toast('تم تحميل بيانات الفريق من قاعدة البيانات المركزية');
 }
@@ -771,6 +771,19 @@ async function ropReadConsumption(file){
  }
  return out;
 }
+async function ropUploadSource(file,kind){
+ const safe=file.name.replace(/[^a-zA-Z0-9._-]/g,'_');
+ const path=`${currentProfile.id}/inventory-planning/${Date.now()}_${crypto.randomUUID()}_${safe}`;
+ const {error}=await sb.storage.from('procurement-files').upload(path,file,{upsert:false,contentType:file.type||'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
+ if(error)throw new Error('تعذر رفع ملف التحليل إلى التخزين: '+error.message);
+ if(kind==='onHand')state.inventoryPlanning.onHandPath=path;else state.inventoryPlanning.consumptionPath=path;
+}
+async function ropRestoreFromStorage(){
+ const ip=state.inventoryPlanning||{};
+ if(ip.onHandPath){const {data,error}=await sb.storage.from('procurement-files').download(ip.onHandPath);if(error)throw error;ip.onHand=await ropReadOnHand(data);}
+ if(ip.consumptionPath){const {data,error}=await sb.storage.from('procurement-files').download(ip.consumptionPath);if(error)throw error;const maps=await ropReadConsumption(data);ip.consumption=Object.entries(maps).map(([key,map])=>({key,rows:[...map].map(([code,v])=>({code,...v}))}));}
+ state.inventoryPlanning=ip;
+}
 function ropBuildRows(){
  const on=state.inventoryPlanning.onHand||[],cons=state.inventoryPlanning.consumption||{};
  const maps={};Object.entries(cons).forEach(([k,arr])=>maps[k]=new Map(arr.map(x=>[x.code,x])));
@@ -829,8 +842,8 @@ function ropExport(){
  exportWorkbook('Reorder_Point_Inventory_'+scope,[{name:'ROP Analysis',rows}]);
 }
 function ropBindEvents(){
- $('ropOnHandFile').onchange=async e=>{const f=e.target.files[0];if(!f)return;try{state.inventoryPlanning.onHand=await ropReadOnHand(f);state.inventoryPlanning.sourceNames[0]=f.name;$('ropStatus').textContent=`تم تحميل الأرصدة: ${f.name} · ${fmt(state.inventoryPlanning.onHand.length)} صنف`;scheduleWorkspaceSave();}catch(err){toast('خطأ في قراءة الأرصدة: '+err.message)}};
- $('ropConsumptionFile').onchange=async e=>{const f=e.target.files[0];if(!f)return;try{const maps=await ropReadConsumption(f);state.inventoryPlanning.consumption=Object.entries(maps).map(([key,map])=>({key,rows:[...map].map(([code,v])=>({code,...v}))}));state.inventoryPlanning.sourceNames[1]=f.name;$('ropStatus').textContent=`تم تحميل الاستهلاك: ${f.name} · 5 تبويبات`;scheduleWorkspaceSave();}catch(err){toast('خطأ في قراءة الاستهلاك: '+err.message)}};
+ $('ropOnHandFile').onchange=async e=>{const f=e.target.files[0];if(!f)return;try{$('ropStatus').textContent='جارٍ رفع ملف الأرصدة إلى التخزين الآمن...';await ropUploadSource(f,'onHand');state.inventoryPlanning.onHand=await ropReadOnHand(f);state.inventoryPlanning.sourceNames[0]=f.name;$('ropStatus').textContent=`تم رفع وتحميل الأرصدة: ${f.name} · ${fmt(state.inventoryPlanning.onHand.length)} صنف`;scheduleWorkspaceSave();}catch(err){toast('خطأ في ملف الأرصدة: '+err.message)}};
+ $('ropConsumptionFile').onchange=async e=>{const f=e.target.files[0];if(!f)return;try{$('ropStatus').textContent='جارٍ رفع ملف الاستهلاك إلى التخزين الآمن...';await ropUploadSource(f,'consumption');const maps=await ropReadConsumption(f);state.inventoryPlanning.consumption=Object.entries(maps).map(([key,map])=>({key,rows:[...map].map(([code,v])=>({code,...v}))}));state.inventoryPlanning.sourceNames[1]=f.name;$('ropStatus').textContent=`تم رفع وتحميل الاستهلاك: ${f.name} · 5 تبويبات`;scheduleWorkspaceSave();}catch(err){toast('خطأ في ملف الاستهلاك: '+err.message)}};
  $('ropAnalyze').onclick=()=>{if(!state.inventoryPlanning.onHand.length||!state.inventoryPlanning.consumption.length){toast('ارفع ملف الأرصدة وملف الاستهلاك أولاً.');return}state.inventoryPlanning.loaded=true;ropRender();$('ropStatus').textContent='تم التحليل. الرصيد الفعلي فقط، والاستهلاك FINAL CONSUMPTION.';scheduleWorkspaceSave();};
  $('ropScope').onchange=ropRender;$('ropSearch').oninput=ropRender;$('ropStatusFilter').onchange=ropRender;$('ropExport').onclick=ropExport;
 }
@@ -849,7 +862,7 @@ function awardBindEvents(){
 awardBindEvents();
 ropBindEvents();
 
-document.querySelectorAll('.nav button').forEach(b=>b.onclick=()=>{document.querySelectorAll('.nav button').forEach(x=>x.classList.remove('active'));b.classList.add('active');document.querySelectorAll('.page').forEach(x=>x.classList.remove('active'));$(b.dataset.page).classList.add('active');$('pageTitle').textContent=b.textContent.replace(/^[^\s]+\s/,'')});
+document.querySelectorAll('.nav button').forEach(b=>b.onclick=()=>{document.querySelectorAll('.nav button').forEach(x=>x.classList.remove('active'));b.classList.add('active');document.querySelectorAll('.page').forEach(x=>x.classList.remove('active'));$(b.dataset.page).classList.add('active');$('pageTitle').textContent=b.textContent.replace(/^[^\s]+\s/,'');if(b.dataset.page==='reorder'&&state.inventoryPlanning.loaded)ropRender()});
 draw();
 </script>
 </body></html>
