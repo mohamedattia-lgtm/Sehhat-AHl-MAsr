@@ -55,6 +55,18 @@
 #awarding .award-current-best{display:inline-flex;flex-direction:column;gap:3px;padding:8px 10px;border-radius:8px;background:#edf4ff;border:1px solid #bdd2f3;color:#17427a;min-width:150px}
 #awarding .award-qty{display:block}
 
+
+#reorder .tablewrap{border:1px solid #dbe4ef;border-radius:10px}
+#reorder table{border-collapse:separate;border-spacing:0;min-width:2200px;background:#fff}
+#reorder thead th{position:sticky;top:0;z-index:2;background:#17365d;color:#fff;padding:10px 8px;border:1px solid #345477;white-space:nowrap;text-align:center}
+#reorder thead tr:nth-child(2) th{top:38px;background:#244b76}
+#reorder tbody td{padding:8px;border-bottom:1px solid #e6edf5;border-left:1px solid #edf1f6;white-space:nowrap}
+#reorder tbody tr:nth-child(even){background:#f7faff}
+#reorder .rop-good{background:#dcfce7;color:#166534;font-weight:700}
+#reorder .rop-bad{background:#fee2e2;color:#991b1b;font-weight:700}
+#reorder .rop-over{background:#fecaca;color:#7f1d1d;font-weight:800}
+#reorder .rop-neutral{background:#f1f5f9;color:#475569}
+
 </style>
 </head>
 <body>
@@ -72,6 +84,7 @@
     <button data-page="imports">⇧ استيراد الملفات</button>
     <button data-page="pr">▤ طلب الشراء PR</button>
     <button data-page="purchaseOrders">▣ أوامر الشراء PO</button>\n    <button data-page="awarding">🏆 ترسية المشتريات</button>
+    <button data-page="reorder">📊 نقطة إعادة الطلب والمخزون</button>
     <button data-page="comparison">⇄ مقارنة التوريد</button>
     <button data-page="suppliers">♙ الموردون</button>
     <button data-page="receipts">📦 الاستلامات الفعلية</button>
@@ -178,6 +191,60 @@
   <div class="toolbar" style="margin-top:12px"><button class="btn primary" id="awardSave">حفظ توزيع الترسية</button><span class="muted">الحفظ لا يصدر PO تلقائيًا؛ تصدير أوامر الموردين يتم من الزر أعلى الصفحة.</span></div>
  </div>
 </section>
+
+<section class="page" id="reorder">
+ <div class="panel">
+  <div class="panelhead"><h3>نقطة إعادة الطلب وقياس المخزون — Reorder Point & Inventory Coverage</h3><span class="pill">ON HAND فقط · Lead Time = 15 يوم</span></div>
+  <div class="note">يعتمد التحليل على الرصيد الفعلي ON HAND والاستهلاك الشهري FINAL CONSUMPTION. لا تدخل أوامر الشراء أو التوريدات المتوقعة في الحساب. المخزن الرئيسي يُقاس باستهلاك الصيدليات الخمس مجتمعة، كما تُحسب تغطية الشبكة على إجمالي أرصدة الجهات الست.</div>
+  <div class="toolbar" style="flex-wrap:wrap;gap:10px">
+   <label>ملف الأرصدة ON HAND <input type="file" id="ropOnHandFile" accept=".xlsx,.xls"></label>
+   <label>ملف الاستهلاك <input type="file" id="ropConsumptionFile" accept=".xlsx,.xls"></label>
+   <button class="btn primary" id="ropAnalyze">تحليل المخزون</button>
+   <button class="btn soft" id="ropExport" disabled>تصدير تحليل Excel</button>
+  </div>
+  <div class="note" id="ropStatus">ارفع الملفين لبدء التحليل. سيتم الربط بكود الصنف فقط.</div>
+ </div>
+ <div class="grid cols-4" style="margin-top:14px">
+  <div class="card"><div class="label">أصناف مرتبطة</div><div class="value" id="ropKpiItems">—</div><div class="hint">أصناف لها رصيد واستهلاك</div></div>
+  <div class="card"><div class="label">أصناف أقل من ROP 45 يوم</div><div class="value" id="ropKpiBelow">—</div><div class="hint">Safety 30 + Lead Time 15</div></div>
+  <div class="card"><div class="label">أصناف أعلى من 120 يوم</div><div class="value" id="ropKpiOver">—</div><div class="hint">مخزون زائد عن أعلى سيناريو</div></div>
+  <div class="card"><div class="label">أصناف بلا استهلاك مطابق</div><div class="value" id="ropKpiNoCons">—</div><div class="hint">لا يمكن حساب أيام تغطيتها</div></div>
+ </div>
+ <div class="panel" style="margin-top:14px">
+  <div class="panelhead"><h3>اختيار نطاق التحليل</h3><span class="pill">كل السيناريوهات ظاهرة</span></div>
+  <div class="toolbar" style="flex-wrap:wrap">
+   <label>الجهة / المجموعة
+    <select id="ropScope">
+     <option value="network">إجمالي الشبكة: المخزن + الصيدليات</option>
+     <option value="warehouse">المخزن الرئيسي (رصيده ÷ استهلاك الصيدليات مجتمعة)</option>
+     <option value="gulf">صيدلية أرض الجولف</option>
+     <option value="moqqatem">صيدلية المقطم</option>
+     <option value="manyal">صيدلية المنيل</option>
+     <option value="sheroq">صيدلية الشروق</option>
+     <option value="nasr">صيدلية مدينة نصر</option>
+    </select>
+   </label>
+   <input id="ropSearch" placeholder="بحث بكود الصنف أو الاسم">
+   <select id="ropStatusFilter"><option value="all">كل الحالات</option><option value="below">أقل من ROP</option><option value="healthy">داخل النطاق</option><option value="over">Overstock</option><option value="nocons">بدون استهلاك</option></select>
+  </div>
+  <div class="note" id="ropScopeNote"></div>
+  <div class="tablewrap"><table id="ropTable" style="min-width:2200px">
+   <thead><tr>
+    <th rowspan="2">كود الصنف</th><th rowspan="2">اسم الصنف</th><th rowspan="2">ON HAND</th><th rowspan="2">الاستهلاك الشهري</th><th rowspan="2">استهلاك يومي</th><th rowspan="2">التغطية الحالية</th>
+    <th colspan="3">Safety Stock 30 يوم</th><th colspan="3">Safety Stock 45 يوم</th><th colspan="3">Safety Stock 60 يوم</th><th colspan="3">Safety Stock 90 يوم</th><th colspan="3">Safety Stock 120 يوم</th>
+   </tr><tr>
+    <th>Target</th><th>ROP 45</th><th>العجز/الزيادة</th>
+    <th>Target</th><th>ROP 60</th><th>العجز/الزيادة</th>
+    <th>Target</th><th>ROP 75</th><th>العجز/الزيادة</th>
+    <th>Target</th><th>ROP 105</th><th>العجز/الزيادة</th>
+    <th>Target</th><th>ROP 135</th><th>العجز/الزيادة</th>
+   </tr></thead>
+   <tbody id="ropRows"><tr><td colspan="21" class="empty">ارفع الملفين ثم اضغط تحليل المخزون.</td></tr></tbody>
+  </table></div>
+  <div class="note">Target = الاستهلاك اليومي × Safety Stock Days. ROP = الاستهلاك اليومي × (Safety Stock Days + 15). فرق المخزون = ON HAND − Target. اللون الأخضر يعني الرصيد داخل/أعلى Target وحتى حد 120 يوم. الأحمر يعني أقل من ROP أو Overstock أعلى من 120 يوم. حالة ROP منفصلة عن العجز عن Target.</div>
+ </div>
+</section>
+
 <section class="page" id="comparison">
     <div class="panel">
       <div class="panelhead"><h3>مقارنة أمر الشراء PO بالاستلام الفعلي</h3><div><span class="pill">المورد + كود الصنف + الشهر</span> <button class="btn soft" id="exportComparison">تصدير المقارنة Excel</button></div></div>
@@ -234,7 +301,7 @@
 const state={po:[],receipts:[],pr:[],prVendor:[],summary:[],history:[],month:"2026-10",users:[
  {name:"MOHAMED ATTIA",email:"mohamed.attia@sehhatahlmasr.com",role:"procurement_manager",active:true},
  {name:"LAMIAA MOHAMMED",email:"lamiaa.mohammed@sehhatahlmasr.com",role:"procurement_supervisor",active:true},
- {name:"MOHAMED ABDULRAHMAN",email:"mohamed.abdulrahman@sehhatahlmasr.com",role:"procurement_specialist",active:true}],aliases:[],audit:[],customModules:[],award:{pr:[],offers:[],history:[],allocations:{},approved:false,month:"2026-10"}};
+ {name:"MOHAMED ABDULRAHMAN",email:"mohamed.abdulrahman@sehhatahlmasr.com",role:"procurement_specialist",active:true}],aliases:[],audit:[],customModules:[],award:{pr:[],offers:[],history:[],allocations:{},approved:false,month:"2026-10"},inventoryPlanning:{onHand:[],consumption:[],loaded:false,sourceNames:[]}};
 
 // Supabase connection: publishable key only. Never place a service_role key in the browser.
 const SUPABASE_URL = 'https://odlkkziyhbxkqepnsqfm.supabase.co';
@@ -250,7 +317,7 @@ const $=id=>document.getElementById(id);
 let currentProfile = null, workspaceChannel = null, saveTimer = null, applyingRemote = false;
 const cloudFiles = [];
 function setCloudStatus(message, good=true){const el=document.getElementById('cloudStatus');if(el){el.textContent=message;el.style.color=good?'#15966a':'#c2414b'}}
-function serializableState(){return {po:state.po,receipts:state.receipts,pr:state.pr,prVendor:state.prVendor,summary:state.summary,history:state.history,month:state.month,aliases:state.aliases,audit:state.audit,customModules:state.customModules,award:state.award,cloudFiles};}
+function serializableState(){return {po:state.po,receipts:state.receipts,pr:state.pr,prVendor:state.prVendor,summary:state.summary,history:state.history,month:state.month,aliases:state.aliases,audit:state.audit,customModules:state.customModules,award:state.award,inventoryPlanning:state.inventoryPlanning,cloudFiles};}
 async function persistWorkspace(){
  if(!currentProfile || applyingRemote) return;
  const payload=serializableState();
@@ -262,7 +329,7 @@ function scheduleWorkspaceSave(){if(!currentProfile||applyingRemote)return;clear
 async function loadWorkspace(showToast=false){
  const {data,error}=await sb.from('procurement_workspace').select('payload,updated_by').eq('workspace_key','main').maybeSingle();
  if(error) throw error;
- if(data?.payload){applyingRemote=true;const p=data.payload;for(const k of ['po','receipts','pr','prVendor','summary','history','month','aliases','audit','customModules','award'])if(p[k]!==undefined)state[k]=p[k];cloudFiles.splice(0,cloudFiles.length,...(p.cloudFiles||[]));const allMonths=[...new Set([state.month,...state.pr,...state.po,...state.receipts].map(x=>x.month).filter(Boolean))].sort();$('monthFilter').innerHTML=allMonths.map(m=>`<option value="${m}">${m}</option>`).join('');$('monthFilter').value=state.month;draw();applyingRemote=false;}
+ if(data?.payload){applyingRemote=true;const p=data.payload;for(const k of ['po','receipts','pr','prVendor','summary','history','month','aliases','audit','customModules','award','inventoryPlanning'])if(p[k]!==undefined)state[k]=p[k];cloudFiles.splice(0,cloudFiles.length,...(p.cloudFiles||[]));const allMonths=[...new Set([state.month,...state.pr,...state.po,...state.receipts].map(x=>x.month).filter(Boolean))].sort();$('monthFilter').innerHTML=allMonths.map(m=>`<option value="${m}">${m}</option>`).join('');$('monthFilter').value=state.month;draw();applyingRemote=false;}
  else {await persistWorkspace();}
  if(showToast)toast('تم تحميل بيانات الفريق من قاعدة البيانات المركزية');
 }
@@ -672,6 +739,102 @@ function awardExportPO(){
  exportWorkbook('Supplier_POs_'+state.award.month,sheets);
 }
 
+
+const ROP_BRANCHES=[
+ {key:'gulf',stock:'صيدلية.د مينا رؤوف راجي (أرض الجولف)',sheet:'gulf',label:'صيدلية أرض الجولف'},
+ {key:'moqqatem',stock:'(المقطم) صيدلية د. محمد عبد اللطيف العجرودي',sheet:'moqqatem ',label:'صيدلية المقطم'},
+ {key:'manyal',stock:'(المنيل) صيدلية د. صفية',sheet:'manyal ',label:'صيدلية المنيل'},
+ {key:'sheroq',stock:'صيدلية د. احمد السيد (الشروق)',sheet:'sheroq',label:'صيدلية الشروق'},
+ {key:'nasr',stock:'(مدينة نصر)  صيدلية اول مايو',sheet:'nasr city',label:'صيدلية مدينة نصر'}
+];
+const ROP_WAREHOUSE='سفن سيز فارما(ترخيص 19 لسنه 2020)';
+function ropCode(v){return String(v??'').trim().replace(/\.0$/,'').replace(/\s+/g,'')}
+function ropNum(v){if(v===null||v===undefined||v==='')return 0;const n=Number(String(v).replace(/,/g,''));return Number.isFinite(n)?n:0}
+async function ropReadOnHand(file){
+ const wb=XLSX.read(await file.arrayBuffer(),{type:'array'}),ws=wb.Sheets[wb.SheetNames[0]],rows=XLSX.utils.sheet_to_json(ws,{defval:''});
+ const first=rows[0]||{};if(!Object.keys(first).some(k=>norm(k)==='item code'))throw new Error('لم يتم العثور على عمود Item Code في ملف الأرصدة');
+ return rows.map(r=>({code:ropCode(r['Item Code']),item:String(r['Items']||''),stocks:{
+  warehouse:ropNum(r[ROP_WAREHOUSE]),
+  gulf:ropNum(r[ROP_BRANCHES[0].stock]),moqqatem:ropNum(r[ROP_BRANCHES[1].stock]),
+  manyal:ropNum(r[ROP_BRANCHES[2].stock]),nasr:ropNum(r[ROP_BRANCHES[4].stock]),sheroq:ropNum(r[ROP_BRANCHES[3].stock])
+ }})).filter(x=>x.code);
+}
+async function ropReadConsumption(file){
+ const wb=XLSX.read(await file.arrayBuffer(),{type:'array'}),out={};
+ const sheetMap={gulf:'gulf',moqqatem:'moqqatem ',manyal:'manyal ',sheroq:'sheroq',nasr:'nasr city'};
+ for(const [key,sheetName] of Object.entries(sheetMap)){
+  const actual=wb.SheetNames.find(n=>norm(n)===norm(sheetName));
+  if(!actual)throw new Error('تبويب الاستهلاك غير موجود: '+sheetName);
+  const rows=XLSX.utils.sheet_to_json(wb.Sheets[actual],{defval:''}),map=new Map();
+  rows.forEach(r=>{const code=ropCode(r['Item Code']);if(code)map.set(code,{item:String(r['Item Name']||''),monthly:ropNum(r['FINAL CONSUMPTION ' ]??r['FINAL CONSUMPTION'])});});
+  out[key]=map;
+ }
+ return out;
+}
+function ropBuildRows(){
+ const on=state.inventoryPlanning.onHand||[],cons=state.inventoryPlanning.consumption||{};
+ const maps={};Object.entries(cons).forEach(([k,arr])=>maps[k]=new Map(arr.map(x=>[x.code,x])));
+ const keys=new Set(on.map(x=>x.code));
+ return [...keys].map(code=>{
+  const stock=on.find(x=>x.code===code);if(!stock)return null;
+  const branches=ROP_BRANCHES.map(b=>({key:b.key,monthly:maps[b.key]?.get(code)?.monthly??0,stock:stock.stocks[b.key]||0,label:b.label}));
+  const groupMonthly=branches.reduce((a,b)=>a+b.monthly,0);
+  const groupStock=stock.stocks.warehouse+branches.reduce((a,b)=>a+b.stock,0);
+  const whMonthly=groupMonthly;
+  const anyConsumption=branches.some(b=>maps[b.key]?.has(code));
+  return {code,item:stock.item||branches.map(b=>maps[b.key]?.get(code)?.item).find(Boolean)||'',stocks:stock.stocks,branches,groupMonthly,groupStock,whMonthly,anyConsumption};
+ }).filter(Boolean);
+}
+function ropCalc(row,scope){
+ let onHand,monthly;
+ if(scope==='network'){onHand=row.groupStock;monthly=row.groupMonthly;}
+ else if(scope==='warehouse'){onHand=row.stocks.warehouse;monthly=row.whMonthly;}
+ else {const b=row.branches.find(x=>x.key===scope);onHand=b?.stock||0;monthly=b?.monthly||0;}
+ const daily=monthly/30,days=daily>0?onHand/daily:null;
+ const scenarios=[30,45,60,90,120].map(ss=>{
+  const target=daily*ss,rop=daily*(ss+15),gap=onHand-target,ropGap=onHand-rop;
+  // Scenario color is based on the Safety Stock target only; ROP is shown separately.
+  const status=daily<=0?'nocons':days>120?'over':days<ss?'below':'healthy';
+  const ropStatus=daily<=0?'nocons':onHand<rop?'below':'healthy';
+  return {ss,target,rop,gap,ropGap,status,ropStatus};
+ });
+ return {...row,onHand,monthly,daily,days,scenarios,status:daily<=0?'nocons':days>120?'over':days<45?'below':'healthy'};
+}
+function ropRender(){
+ if(!state.inventoryPlanning.loaded)return;
+ const scope=$('ropScope').value,query=norm($('ropSearch').value||''),filter=$('ropStatusFilter').value;
+ const all=ropBuildRows(),calc=all.map(x=>ropCalc(x,scope));
+ const linked=calc.filter(x=>x.monthly>0),below=calc.filter(x=>x.status==='below'),over=calc.filter(x=>x.status==='over'),no=calc.filter(x=>x.status==='nocons');
+ $('ropKpiItems').textContent=fmt(linked.length);$('ropKpiBelow').textContent=fmt(below.length);$('ropKpiOver').textContent=fmt(over.length);$('ropKpiNoCons').textContent=fmt(no.length);
+ const scopeNames={network:'إجمالي الشبكة: رصيد المخزن + أرصدة الصيدليات، واستهلاك الصيدليات مجتمعة',warehouse:'المخزن الرئيسي: رصيد المخزن فقط ÷ استهلاك الصيدليات الخمس مجتمعة',gulf:'صيدلية أرض الجولف',moqqatem:'صيدلية المقطم',manyal:'صيدلية المنيل',sheroq:'صيدلية الشروق',nasr:'صيدلية مدينة نصر'};
+ $('ropScopeNote').textContent='النطاق الحالي: '+scopeNames[scope]+'. Lead Time ثابت 15 يوم. الرصيد المستخدم ON HAND فقط.';
+ const filtered=calc.filter(x=>(!query||norm(x.code+' '+x.item).includes(query))&&(filter==='all'||(filter==='below'&&x.status==='below')||(filter==='healthy'&&x.status==='healthy')||(filter==='over'&&x.status==='over')||(filter==='nocons'&&x.status==='nocons')));
+ $('ropRows').innerHTML=filtered.map(x=>{
+  const cls=x.status==='over'?'rop-over':x.status==='below'?'rop-bad':x.status==='healthy'?'rop-good':'rop-neutral';
+  const scenarioCells=x.scenarios.map(z=>{
+   const statusClass=z.status==='over'?'rop-over':z.status==='below'?'rop-bad':z.status==='healthy'?'rop-good':'rop-neutral';
+   const delta=z.gap>=0?'فائض عن Target':'عجز عن Target';
+   return `<td class="${statusClass}">${fmt(z.target)}</td><td class="${z.ropStatus==='below'?'rop-bad':'rop-good'}">${fmt(z.rop)} ${z.ropStatus==='below'?'· أقل من ROP':''}</td><td class="${z.gap<0?'rop-bad':z.status==='over'?'rop-over':'rop-good'}">${delta}: ${fmt(Math.abs(z.gap))}</td>`;
+  }).join('');
+  return `<tr><td>${esc(x.code)}</td><td>${esc(x.item)}</td><td class="num">${fmt(x.onHand)}</td><td class="num">${fmt(x.monthly)}</td><td class="num">${fmt(x.daily)}</td><td class="${cls}">${x.days===null?'غير متاح':fmt(x.days)+' يوم'}</td>${scenarioCells}</tr>`;
+ }).join('')||'<tr><td colspan="21" class="empty">لا توجد أصناف مطابقة.</td></tr>';
+ $('ropExport').disabled=!filtered.length;
+}
+function ropExport(){
+ const scope=$('ropScope').value,rows=ropBuildRows().map(x=>{
+  const c=ropCalc(x,scope),r={'Item Code':c.code,'Item Name':c.item,'ON HAND':c.onHand,'Monthly Consumption':c.monthly,'Daily Consumption':c.daily,'Current Stock Days':c.days??'N/A'};
+  c.scenarios.forEach(z=>{r[`Target ${z.ss} Days`]=z.target;r[`ROP ${z.ss+15} Days`]=z.rop;r[`Gap vs Target ${z.ss} Days`]=z.gap;r[`Status ${z.ss} Days`]=z.status;});
+  return r;
+ });
+ exportWorkbook('Reorder_Point_Inventory_'+scope,[{name:'ROP Analysis',rows}]);
+}
+function ropBindEvents(){
+ $('ropOnHandFile').onchange=async e=>{const f=e.target.files[0];if(!f)return;try{state.inventoryPlanning.onHand=await ropReadOnHand(f);state.inventoryPlanning.sourceNames[0]=f.name;$('ropStatus').textContent=`تم تحميل الأرصدة: ${f.name} · ${fmt(state.inventoryPlanning.onHand.length)} صنف`;scheduleWorkspaceSave();}catch(err){toast('خطأ في قراءة الأرصدة: '+err.message)}};
+ $('ropConsumptionFile').onchange=async e=>{const f=e.target.files[0];if(!f)return;try{const maps=await ropReadConsumption(f);state.inventoryPlanning.consumption=Object.entries(maps).map(([key,map])=>({key,rows:[...map].map(([code,v])=>({code,...v}))}));state.inventoryPlanning.sourceNames[1]=f.name;$('ropStatus').textContent=`تم تحميل الاستهلاك: ${f.name} · 5 تبويبات`;scheduleWorkspaceSave();}catch(err){toast('خطأ في قراءة الاستهلاك: '+err.message)}};
+ $('ropAnalyze').onclick=()=>{if(!state.inventoryPlanning.onHand.length||!state.inventoryPlanning.consumption.length){toast('ارفع ملف الأرصدة وملف الاستهلاك أولاً.');return}state.inventoryPlanning.loaded=true;ropRender();$('ropStatus').textContent='تم التحليل. الرصيد الفعلي فقط، والاستهلاك FINAL CONSUMPTION.';scheduleWorkspaceSave();};
+ $('ropScope').onchange=ropRender;$('ropSearch').oninput=ropRender;$('ropStatusFilter').onchange=ropRender;$('ropExport').onclick=ropExport;
+}
+
 function awardBindEvents(){
  $('awardPRFile').onchange=async e=>{const f=e.target.files[0];if(!f)return;try{const r=await awardReadPRFile(f);state.award.pr=r.rows;state.award.month=$('awardMonthInput').value||state.month;state.award.pr.forEach(x=>x.month=state.award.month);$('awardStatus').textContent=`تم تحميل الطلبية: ${f.name} · ${fmt(r.rows.length)} سجل`;state.award.allocations={};awardRender();}catch(err){toast('خطأ في قراءة الطلبية: '+err.message)}};
  $('awardOffersFile').onchange=async e=>{const f=e.target.files[0];if(!f)return;try{const r=await awardReadOffersFile(f);state.award.offers=r.rows;$('awardStatus').textContent=`تم تحميل العروض: ${f.name} · ${fmt(r.rows.length)} عرض فعلي`;awardRender();}catch(err){toast('خطأ في قراءة العروض: '+err.message)}};
@@ -684,6 +847,7 @@ function awardBindEvents(){
  $('awardSave').onclick=()=>{state.award.approved=true;audit('حفظ توزيع الترسية',state.award.month);scheduleWorkspaceSave();toast('تم حفظ توزيع الترسية في مساحة العمل المشتركة.')};
 }
 awardBindEvents();
+ropBindEvents();
 
 document.querySelectorAll('.nav button').forEach(b=>b.onclick=()=>{document.querySelectorAll('.nav button').forEach(x=>x.classList.remove('active'));b.classList.add('active');document.querySelectorAll('.page').forEach(x=>x.classList.remove('active'));$(b.dataset.page).classList.add('active');$('pageTitle').textContent=b.textContent.replace(/^[^\s]+\s/,'')});
 draw();
