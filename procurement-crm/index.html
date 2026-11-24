@@ -785,11 +785,15 @@ async function ropRestoreFromStorage(){
  state.inventoryPlanning=ip;
 }
 function ropBuildRows(){
- const on=state.inventoryPlanning.onHand||[],cons=state.inventoryPlanning.consumption||{};
- const maps={};Object.entries(cons).forEach(([k,arr])=>maps[k]=new Map(arr.map(x=>[x.code,x])));
- const keys=new Set(on.map(x=>x.code));
+ const on=state.inventoryPlanning.onHand||[],cons=state.inventoryPlanning.consumption||[];
+ // consumption is persisted as [{key, rows:[...]}], not as a keyed object.
+ const maps={};
+ if(Array.isArray(cons)) cons.forEach(entry=>{if(entry&&entry.key&&Array.isArray(entry.rows))maps[entry.key]=new Map(entry.rows.map(x=>[ropCode(x.code),x]));});
+ else Object.entries(cons).forEach(([k,arr])=>{if(Array.isArray(arr))maps[k]=new Map(arr.map(x=>[ropCode(x.code),x]));});
+ const stockMap=new Map(on.map(x=>[ropCode(x.code),x]));
+ const keys=new Set(stockMap.keys());
  return [...keys].map(code=>{
-  const stock=on.find(x=>x.code===code);if(!stock)return null;
+  const stock=stockMap.get(code);if(!stock)return null;
   const branches=ROP_BRANCHES.map(b=>({key:b.key,monthly:maps[b.key]?.get(code)?.monthly??0,stock:stock.stocks[b.key]||0,label:b.label}));
   const groupMonthly=branches.reduce((a,b)=>a+b.monthly,0);
   const groupStock=stock.stocks.warehouse+branches.reduce((a,b)=>a+b.stock,0);
@@ -842,9 +846,9 @@ function ropExport(){
  exportWorkbook('Reorder_Point_Inventory_'+scope,[{name:'ROP Analysis',rows}]);
 }
 function ropBindEvents(){
- $('ropOnHandFile').onchange=async e=>{const f=e.target.files[0];if(!f)return;try{$('ropStatus').textContent='جارٍ رفع ملف الأرصدة إلى التخزين الآمن...';await ropUploadSource(f,'onHand');state.inventoryPlanning.onHand=await ropReadOnHand(f);state.inventoryPlanning.sourceNames[0]=f.name;$('ropStatus').textContent=`تم رفع وتحميل الأرصدة: ${f.name} · ${fmt(state.inventoryPlanning.onHand.length)} صنف`;scheduleWorkspaceSave();}catch(err){toast('خطأ في ملف الأرصدة: '+err.message)}};
- $('ropConsumptionFile').onchange=async e=>{const f=e.target.files[0];if(!f)return;try{$('ropStatus').textContent='جارٍ رفع ملف الاستهلاك إلى التخزين الآمن...';await ropUploadSource(f,'consumption');const maps=await ropReadConsumption(f);state.inventoryPlanning.consumption=Object.entries(maps).map(([key,map])=>({key,rows:[...map].map(([code,v])=>({code,...v}))}));state.inventoryPlanning.sourceNames[1]=f.name;$('ropStatus').textContent=`تم رفع وتحميل الاستهلاك: ${f.name} · 5 تبويبات`;scheduleWorkspaceSave();}catch(err){toast('خطأ في ملف الاستهلاك: '+err.message)}};
- $('ropAnalyze').onclick=()=>{if(!state.inventoryPlanning.onHand.length||!state.inventoryPlanning.consumption.length){toast('ارفع ملف الأرصدة وملف الاستهلاك أولاً.');return}state.inventoryPlanning.loaded=true;ropRender();$('ropStatus').textContent='تم التحليل. الرصيد الفعلي فقط، والاستهلاك FINAL CONSUMPTION.';scheduleWorkspaceSave();};
+ $('ropOnHandFile').onchange=async e=>{const f=e.target.files[0];if(!f)return;try{$('ropStatus').textContent='جارٍ قراءة ملف الأرصدة...';state.inventoryPlanning.onHand=await ropReadOnHand(f);state.inventoryPlanning.sourceNames[0]=f.name;$('ropStatus').textContent=`تمت قراءة الأرصدة: ${f.name} · ${fmt(state.inventoryPlanning.onHand.length)} صنف. جارٍ حفظ نسخة آمنة...`;try{await ropUploadSource(f,'onHand');scheduleWorkspaceSave();$('ropStatus').textContent+= ' · تم رفع النسخة الآمنة';}catch(storageErr){$('ropStatus').textContent+=' · تعذر رفع النسخة الآمنة: '+storageErr.message+' (البيانات الحالية مقروءة في هذه الجلسة فقط)';} }catch(err){$('ropStatus').textContent='خطأ في قراءة ملف الأرصدة: '+err.message;toast('خطأ في ملف الأرصدة: '+err.message);console.error(err)}};
+ $('ropConsumptionFile').onchange=async e=>{const f=e.target.files[0];if(!f)return;try{$('ropStatus').textContent='جارٍ قراءة ملف الاستهلاك...';const maps=await ropReadConsumption(f);state.inventoryPlanning.consumption=Object.entries(maps).map(([key,map])=>({key,rows:[...map].map(([code,v])=>({code,...v}))}));state.inventoryPlanning.sourceNames[1]=f.name;$('ropStatus').textContent=`تمت قراءة الاستهلاك: ${f.name} · 5 تبويبات. جارٍ حفظ نسخة آمنة...`;try{await ropUploadSource(f,'consumption');scheduleWorkspaceSave();$('ropStatus').textContent+=' · تم رفع النسخة الآمنة';}catch(storageErr){$('ropStatus').textContent+=' · تعذر رفع النسخة الآمنة: '+storageErr.message+' (البيانات الحالية مقروءة في هذه الجلسة فقط)';}}catch(err){$('ropStatus').textContent='خطأ في قراءة ملف الاستهلاك: '+err.message;toast('خطأ في ملف الاستهلاك: '+err.message);console.error(err)}};
+ $('ropAnalyze').onclick=()=>{try{const ip=state.inventoryPlanning||{};if(!ip.onHand?.length||!ip.consumption?.length){$('ropStatus').textContent='لم تكتمل البيانات: تأكد من اختيار ملف الأرصدة وملف الاستهلاك وانتظر رسالة اكتمال تحميل كل ملف.';toast('ارفع ملف الأرصدة وملف الاستهلاك أولاً.');return}const rows=ropBuildRows();if(!rows.length)throw new Error('لم يتم العثور على أصناف مشتركة في ملف الأرصدة.');ip.loaded=true;ropRender();$('ropStatus').textContent=`تم التحليل بنجاح: ${fmt(rows.length)} صنف من ملف الأرصدة. الرصيد الفعلي فقط، والاستهلاك FINAL CONSUMPTION.`;scheduleWorkspaceSave();}catch(err){$('ropStatus').textContent='تعذر تنفيذ التحليل: '+err.message;toast('خطأ في تحليل المخزون: '+err.message);console.error('ROP analysis error',err)}};
  $('ropScope').onchange=ropRender;$('ropSearch').oninput=ropRender;$('ropStatusFilter').onchange=ropRender;$('ropExport').onclick=ropExport;
 }
 
