@@ -241,7 +241,7 @@
    </tr></thead>
    <tbody id="ropRows"><tr><td colspan="21" class="empty">ارفع الملفين ثم اضغط تحليل المخزون.</td></tr></tbody>
   </table></div>
-  <div class="note">Target = الاستهلاك اليومي × Safety Stock Days. ROP = الاستهلاك اليومي × (Safety Stock Days + 15). فرق المخزون = ON HAND − Target. اللون الأخضر يعني الرصيد داخل/أعلى Target وحتى حد 120 يوم. الأحمر يعني أقل من ROP أو Overstock أعلى من 120 يوم. حالة ROP منفصلة عن العجز عن Target.</div>
+  <div class="note">Target = الاستهلاك اليومي × Safety Stock Days. ROP = الاستهلاك اليومي × (Safety Stock Days + 15). العجز/الزيادة = ON HAND − ROP؛ الموجب فائض عن ROP والسالب عجز عن ROP. يظل Target مرجعًا لمستوى Safety Stock، بينما قرار العجز والزيادة يُقاس مقابل ROP.</div>
  </div>
 </section>
 
@@ -830,8 +830,8 @@ function ropRender(){
   const cls=x.status==='over'?'rop-over':x.status==='below'?'rop-bad':x.status==='healthy'?'rop-good':'rop-neutral';
   const scenarioCells=x.scenarios.map(z=>{
    const statusClass=z.status==='over'?'rop-over':z.status==='below'?'rop-bad':z.status==='healthy'?'rop-good':'rop-neutral';
-   const delta=z.gap>=0?'فائض عن Target':'عجز عن Target';
-   return `<td class="${statusClass}">${fmt(z.target)}</td><td class="${z.ropStatus==='below'?'rop-bad':'rop-good'}">${fmt(z.rop)} ${z.ropStatus==='below'?'· أقل من ROP':''}</td><td class="${z.gap<0?'rop-bad':z.status==='over'?'rop-over':'rop-good'}">${delta}: ${fmt(Math.abs(z.gap))}</td>`;
+   const delta=z.ropGap>=0?'فائض عن ROP':'عجز عن ROP';
+   return `<td class="${statusClass}">${fmt(z.target)}</td><td class="${z.ropStatus==='below'?'rop-bad':'rop-good'}">${fmt(z.rop)} ${z.ropStatus==='below'?'· أقل من ROP':''}</td><td class="${z.ropGap<0?'rop-bad':z.status==='over'?'rop-over':'rop-good'}">${delta}: ${fmt(Math.abs(z.ropGap))}</td>`;
   }).join('');
   return `<tr><td>${esc(x.code)}</td><td>${esc(x.item)}</td><td class="num">${fmt(x.onHand)}</td><td class="num">${fmt(x.monthly)}</td><td class="num">${fmt(x.daily)}</td><td class="${cls}">${x.days===null?'غير متاح':fmt(x.days)+' يوم'}</td>${scenarioCells}</tr>`;
  }).join('')||'<tr><td colspan="21" class="empty">لا توجد أصناف مطابقة.</td></tr>';
@@ -840,7 +840,7 @@ function ropRender(){
 function ropExport(){
  const scope=$('ropScope').value,rows=ropBuildRows().map(x=>{
   const c=ropCalc(x,scope),r={'Item Code':c.code,'Item Name':c.item,'ON HAND':c.onHand,'Monthly Consumption':c.monthly,'Daily Consumption':c.daily,'Current Stock Days':c.days??'N/A'};
-  c.scenarios.forEach(z=>{r[`Target ${z.ss} Days`]=z.target;r[`ROP ${z.ss+15} Days`]=z.rop;r[`Gap vs Target ${z.ss} Days`]=z.gap;r[`Status ${z.ss} Days`]=z.status;});
+  c.scenarios.forEach(z=>{r[`Target ${z.ss} Days`]=z.target;r[`ROP ${z.ss+15} Days`]=z.rop;r[`Gap vs ROP ${z.ss+15} Days`]=z.ropGap;r[`Status ${z.ss} Days`]=z.status;});
   return r;
  });
  exportWorkbook('Reorder_Point_Inventory_'+scope,[{name:'ROP Analysis',rows}]);
